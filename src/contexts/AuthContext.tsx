@@ -104,13 +104,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   // Handle session changes
-  const handleSessionChange = async (session: Session | null) => {
-    if (session?.user) {
-      const userProfile = await fetchUserProfile(session.user);
-      dispatch({ type: 'SET_SESSION', payload: { session, user: userProfile } });
-    } else {
+  const handleSessionChange = (session: Session | null) => {
+    if (!session?.user) {
       dispatch({ type: 'SET_SESSION', payload: { session: null, user: null } });
+      return;
     }
+    
+    // Use setTimeout to avoid deadlocks with Supabase auth
+    setTimeout(async () => {
+      try {
+        const userProfile = await fetchUserProfile(session.user);
+        dispatch({ type: 'SET_SESSION', payload: { session, user: userProfile } });
+      } catch (error) {
+        console.error('Error handling session change:', error);
+        dispatch({ type: 'SET_ERROR', payload: 'Failed to load user profile' });
+      }
+    }, 0);
   };
 
   useEffect(() => {
@@ -122,7 +131,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           console.error('Error getting session:', error);
           dispatch({ type: 'SET_ERROR', payload: error.message });
         } else {
-          await handleSessionChange(session);
+          handleSessionChange(session);
         }
       } catch (error) {
         console.error('Error getting initial session:', error);
@@ -133,9 +142,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     getInitialSession();
 
     // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       console.log('Auth state changed:', event, session?.user?.email);
-      await handleSessionChange(session);
+      handleSessionChange(session);
     });
 
     return () => subscription.unsubscribe();
@@ -164,7 +173,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       // If email confirmation is disabled, the user will be automatically signed in
       if (data.session) {
-        await handleSessionChange(data.session);
+        handleSessionChange(data.session);
       } else {
         dispatch({ type: 'SET_LOADING', payload: false });
       }
@@ -189,7 +198,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         throw error;
       }
 
-      await handleSessionChange(data.session);
+      handleSessionChange(data.session);
     } catch (error) {
       const authError = error as AuthError;
       dispatch({ type: 'SET_ERROR', payload: authError.message });
@@ -284,7 +293,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (error) {
         throw error;
       }
-      await handleSessionChange(session);
+      handleSessionChange(session);
     } catch (error) {
       const authError = error as AuthError;
       dispatch({ type: 'SET_ERROR', payload: authError.message });
