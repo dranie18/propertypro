@@ -22,6 +22,12 @@ import MyListings from './pages/dashboard/MyListings';
 import AddEditListing from './pages/dashboard/AddEditListing';
 import ProfileSettings from './pages/dashboard/ProfileSettings';
 
+// User Area Pages
+import UserLayout from './components/user/UserLayout';
+import UserDashboard from './pages/user/UserDashboard';
+import UserProfile from './pages/user/UserProfile';
+import UserProperties from './pages/user/UserProperties';
+
 // Admin Components
 import ProtectedRoute from './components/admin/ProtectedRoute';
 import AdminLayout from './components/admin/AdminLayout';
@@ -70,6 +76,17 @@ function App() {
               <Route path="listings/edit/:id" element={<AddEditListing />} />
               <Route path="profile" element={<ProfileSettings />} />
               <Route path="premium" element={<PremiumDashboardPage />} />
+            </Route>
+
+            {/* User Area Routes */}
+            <Route path="/user" element={
+              <ProtectedRoute>
+                <UserLayout />
+              </ProtectedRoute>
+            }>
+              <Route path="dashboard" element={<UserDashboard />} />
+              <Route path="profile" element={<UserProfile />} />
+              <Route path="properties" element={<UserProperties />} />
             </Route>
 
             {/* Admin Routes */}
