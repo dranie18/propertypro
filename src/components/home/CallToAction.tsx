@@ -19,7 +19,11 @@ const CallToAction: React.FC = () => {
               <Search size={20} className="mr-2" />
               Cari Properti
             </Link>
-            <Link to="/jual-properti" className="btn-secondary py-3 px-6 flex items-center justify-center bg-white text-accent hover:bg-neutral-100">
+            <Link 
+              to="/dashboard/listings/new" 
+              className="btn-secondary py-3 px-6 flex items-center justify-center bg-white text-accent hover:bg-neutral-100"
+              aria-label="Pasang Iklan Properti"
+            >
               <Home size={20} className="mr-2" />
               Pasang Iklan
             </Link>
