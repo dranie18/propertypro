@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Helmet } from 'react-helmet-async';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { 
   Plus, 
   Search, 
@@ -16,6 +16,7 @@ import {
   MapPin
 } from 'lucide-react';
 import { formatPrice } from '../../utils/formatter';
+import { useToast } from '../../contexts/ToastContext';
 
 interface Property {
   id: string;
@@ -37,11 +38,12 @@ interface Property {
 }
 
 const UserProperties: React.FC = () => {
+  const navigate = useNavigate();
+  const { showSuccess, showError } = useToast();
   const [properties, setProperties] = useState<Property[]>([]);
   const [filteredProperties, setFilteredProperties] = useState<Property[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [successMessage, setSuccessMessage] = useState<string | null>(null);
   
   // Filters and view options
   const [searchTerm, setSearchTerm] = useState('');
@@ -202,14 +204,9 @@ const UserProperties: React.FC = () => {
     setFilteredProperties(filtered);
   };
   
-  const addProperty = () => {
-    // This would navigate to the add property page
-    console.log('Navigate to add property page');
-  };
-  
   const editProperty = (id: string) => {
-    // This would navigate to the edit property page
-    console.log('Navigate to edit property page for ID:', id);
+    // Navigate to the edit property page
+    navigate(`/dashboard/listings/edit/${id}`);
   };
   
   const confirmDeleteProperty = (id: string) => {
@@ -229,12 +226,10 @@ const UserProperties: React.FC = () => {
       // Remove the property from the list
       setProperties(prev => prev.filter(p => p.id !== propertyToDelete));
       
-      setSuccessMessage('Property deleted successfully');
-      setTimeout(() => setSuccessMessage(null), 3000);
+      showSuccess('Property deleted successfully', 'The property has been removed from your listings.');
     } catch (err) {
       console.error('Error deleting property:', err);
-      setError('Failed to delete property. Please try again.');
-      setTimeout(() => setError(null), 3000);
+      showError('Failed to delete property', 'Please try again.');
     } finally {
       setIsLoading(false);
       setShowDeleteModal(false);
@@ -307,21 +302,6 @@ const UserProperties: React.FC = () => {
             Add New Property
           </Link>
         </div>
-        
-        {/* Success/Error Messages */}
-        {successMessage && (
-          <div className="bg-green-50 border border-green-200 text-green-800 rounded-lg p-4 flex items-start">
-            <CheckCircle size={20} className="mr-3 flex-shrink-0 mt-0.5" />
-            <p>{successMessage}</p>
-          </div>
-        )}
-        
-        {error && (
-          <div className="bg-red-50 border border-red-200 text-red-800 rounded-lg p-4 flex items-start">
-            <AlertCircle size={20} className="mr-3 flex-shrink-0 mt-0.5" />
-            <p>{error}</p>
-          </div>
-        )}
         
         {/* Filters */}
         <div className="bg-white rounded-lg shadow-md p-4">
