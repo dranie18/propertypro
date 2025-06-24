@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import Layout from '../components/layout/Layout';
-import { Eye, EyeOff, AlertCircle } from 'lucide-react';
+import { Eye, EyeOff } from 'lucide-react';
 import { Helmet } from 'react-helmet-async';
 import { useAuth } from '../contexts/AuthContext';
+import { useNotification } from '../contexts/NotificationContext';
+import { parseSupabaseError } from '../utils/errorMessages';
 
 const LoginPage: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -12,6 +14,7 @@ const LoginPage: React.FC = () => {
   const [rememberMe, setRememberMe] = useState(false);
   
   const { signIn, isAuthenticated, loading, error, clearError } = useAuth();
+  const { showError } = useNotification();
   const navigate = useNavigate();
   const location = useLocation();
   
@@ -27,14 +30,32 @@ const LoginPage: React.FC = () => {
     clearError();
   }, [clearError]);
 
+  useEffect(() => {
+    if (error) {
+      const { title, message } = parseSupabaseError(error);
+      showError(title, message);
+    }
+  }, [error, showError]);
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Basic validation
+    if (!email.trim()) {
+      showError('Email Required', 'Please enter your email address to continue.');
+      return;
+    }
+    
+    if (!password) {
+      showError('Password Required', 'Please enter your password to continue.');
+      return;
+    }
     
     try {
       await signIn(email, password);
       // Navigation will be handled by the useEffect above
     } catch (error) {
-      // Error is handled by the context
+      // Error is handled by the context and notification system
       console.error('Login failed:', error);
     }
   };
@@ -54,16 +75,6 @@ const LoginPage: React.FC = () => {
               <h1 className="font-heading font-bold text-2xl text-accent mb-6 text-center">
                 Masuk ke <span className="text-primary">Properti Pro</span>
               </h1>
-              
-              {error && (
-                <div className="bg-error-50 border border-error-200 text-error-700 p-3 rounded-md mb-4 flex items-start">
-                  <AlertCircle size={18} className="mr-2 mt-0.5 flex-shrink-0" />
-                  <div>
-                    <p className="font-medium">Login gagal</p>
-                    <p className="text-sm">{error}</p>
-                  </div>
-                </div>
-              )}
               
               <form onSubmit={handleLogin}>
                 <div className="mb-4">

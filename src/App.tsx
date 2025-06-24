@@ -2,6 +2,7 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { HelmetProvider } from 'react-helmet-async';
 import { AuthProvider } from './contexts/AuthContext';
+import { NotificationProvider } from './contexts/NotificationContext';
 import HomePage from './pages/HomePage';
 import PropertyListingPage from './pages/PropertyListingPage';
 import PropertyDetailPage from './pages/PropertyDetailPage';
@@ -48,69 +49,71 @@ function App() {
   return (
     <HelmetProvider>
       <AuthProvider>
-        <Router>
-          <Routes>
-            {/* Public Routes */}
-            <Route path="/" element={<HomePage />} />
-            <Route path="/jual" element={<PropertyListingPage />} />
-            <Route path="/sewa" element={<PropertyListingPage />} />
-            <Route path="/properti/:id" element={<PropertyDetailPage />} />
-            <Route path="/login" element={<LoginPage />} />
-            <Route path="/register" element={<RegisterPage />} />
-            <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-            <Route path="/reset-password" element={<ResetPasswordPage />} />
+        <NotificationProvider>
+          <Router>
+            <Routes>
+              {/* Public Routes */}
+              <Route path="/" element={<HomePage />} />
+              <Route path="/jual" element={<PropertyListingPage />} />
+              <Route path="/sewa" element={<PropertyListingPage />} />
+              <Route path="/properti/:id" element={<PropertyDetailPage />} />
+              <Route path="/login" element={<LoginPage />} />
+              <Route path="/register" element={<RegisterPage />} />
+              <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+              <Route path="/reset-password" element={<ResetPasswordPage />} />
 
-            {/* Premium Routes */}
-            <Route path="/premium/upgrade" element={<PremiumUpgradePage />} />
-            <Route path="/premium/features" element={<PremiumFeaturesPage />} />
+              {/* Premium Routes */}
+              <Route path="/premium/upgrade" element={<PremiumUpgradePage />} />
+              <Route path="/premium/features" element={<PremiumFeaturesPage />} />
 
-            {/* User Dashboard Routes */}
-            <Route path="/dashboard" element={
-              <ProtectedRoute>
-                <DashboardLayout />
-              </ProtectedRoute>
-            }>
-              <Route index element={<DashboardOverview />} />
-              <Route path="listings" element={<MyListings />} />
-              <Route path="listings/new" element={<AddEditListing />} />
-              <Route path="listings/edit/:id" element={<AddEditListing />} />
-              <Route path="profile" element={<ProfileSettings />} />
-              <Route path="premium" element={<PremiumDashboardPage />} />
-            </Route>
+              {/* User Dashboard Routes */}
+              <Route path="/dashboard" element={
+                <ProtectedRoute>
+                  <DashboardLayout />
+                </ProtectedRoute>
+              }>
+                <Route index element={<DashboardOverview />} />
+                <Route path="listings" element={<MyListings />} />
+                <Route path="listings/new" element={<AddEditListing />} />
+                <Route path="listings/edit/:id" element={<AddEditListing />} />
+                <Route path="profile" element={<ProfileSettings />} />
+                <Route path="premium" element={<PremiumDashboardPage />} />
+              </Route>
 
-            {/* User Area Routes */}
-            <Route path="/user" element={
-              <ProtectedRoute>
-                <UserLayout />
-              </ProtectedRoute>
-            }>
-              <Route path="dashboard" element={<UserDashboard />} />
-              <Route path="profile" element={<UserProfile />} />
-              <Route path="properties" element={<UserProperties />} />
-            </Route>
+              {/* User Area Routes */}
+              <Route path="/user" element={
+                <ProtectedRoute>
+                  <UserLayout />
+                </ProtectedRoute>
+              }>
+                <Route path="dashboard" element={<UserDashboard />} />
+                <Route path="profile" element={<UserProfile />} />
+                <Route path="properties" element={<UserProperties />} />
+              </Route>
 
-            {/* Admin Routes */}
-            <Route path="/admin/login" element={<AdminLoginPage />} />
-            <Route path="/admin/unauthorized" element={<UnauthorizedPage />} />
-            
-            <Route path="/admin" element={
-              <ProtectedRoute requireAdmin>
-                <AdminLayout />
-              </ProtectedRoute>
-            }>
-              <Route path="dashboard" element={<AdminDashboard />} />
-              <Route path="users" element={<UserManagement />} />
-              <Route path="properties" element={<PropertyManagement />} />
-              <Route path="premium" element={<PremiumManagement />} />
-              <Route path="categories" element={<CategoryManagement />} />
-              <Route path="locations" element={<LocationManagement />} />
-              <Route path="reports" element={<ReportsManagement />} />
-              <Route path="moderation-history" element={<ModerationHistory />} />
-              <Route path="analytics" element={<Analytics />} />
-              <Route path="settings" element={<Settings />} />
-            </Route>
-          </Routes>
-        </Router>
+              {/* Admin Routes */}
+              <Route path="/admin/login" element={<AdminLoginPage />} />
+              <Route path="/admin/unauthorized" element={<UnauthorizedPage />} />
+              
+              <Route path="/admin" element={
+                <ProtectedRoute requireAdmin>
+                  <AdminLayout />
+                </ProtectedRoute>
+              }>
+                <Route path="dashboard" element={<AdminDashboard />} />
+                <Route path="users" element={<UserManagement />} />
+                <Route path="properties" element={<PropertyManagement />} />
+                <Route path="premium" element={<PremiumManagement />} />
+                <Route path="categories" element={<CategoryManagement />} />
+                <Route path="locations" element={<LocationManagement />} />
+                <Route path="reports" element={<ReportsManagement />} />
+                <Route path="moderation-history" element={<ModerationHistory />} />
+                <Route path="analytics" element={<Analytics />} />
+                <Route path="settings" element={<Settings />} />
+              </Route>
+            </Routes>
+          </Router>
+        </NotificationProvider>
       </AuthProvider>
     </HelmetProvider>
   );

@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useSearchParams, useNavigate } from 'react-router-dom';
 import Layout from '../components/layout/Layout';
-import { Eye, EyeOff, Lock, CheckCircle, AlertCircle } from 'lucide-react';
+import { Eye, EyeOff, Lock } from 'lucide-react';
 import { Helmet } from 'react-helmet-async';
 import { useAuth } from '../contexts/AuthContext';
+import { useNotification } from '../contexts/NotificationContext';
+import { parseSupabaseError, errorMessages } from '../utils/errorMessages';
 
 const ResetPasswordPage: React.FC = () => {
   const [searchParams] = useSearchParams();
@@ -14,60 +16,73 @@ const ResetPasswordPage: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
-  const [validationErrors, setValidationErrors] = useState<string[]>([]);
   
   const { updatePassword, loading, error, clearError, session } = useAuth();
+  const { showError, showSuccess, showWarning } = useNotification();
 
   useEffect(() => {
     clearError();
   }, [clearError]);
 
-  const validatePassword = (password: string): string[] => {
-    const errors: string[] = [];
-    
+  useEffect(() => {
+    if (error) {
+      const { title, message } = parseSupabaseError(error);
+      showError(title, message);
+    }
+  }, [error, showError]);
+
+  useEffect(() => {
+    if (!session) {
+      showWarning(
+        'Invalid or Expired Link',
+        'This password reset link is invalid or has expired. Please request a new link.'
+      );
+    }
+  }, [session, showWarning]);
+
+  const validatePassword = (password: string): boolean => {
     if (password.length < 8) {
-      errors.push('Password minimal 8 karakter');
-    }
-    if (!/[A-Z]/.test(password)) {
-      errors.push('Password harus mengandung huruf besar');
-    }
-    if (!/[a-z]/.test(password)) {
-      errors.push('Password harus mengandung huruf kecil');
-    }
-    if (!/\d/.test(password)) {
-      errors.push('Password harus mengandung angka');
+      showError(
+        errorMessages.validation.passwordTooShort.title,
+        errorMessages.validation.passwordTooShort.message
+      );
+      return false;
     }
     
-    return errors;
+    // You can add more password validation rules here
+    return true;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     // Validate passwords
-    const passwordErrors = validatePassword(password);
-    if (passwordErrors.length > 0) {
-      setValidationErrors(passwordErrors);
+    if (!validatePassword(password)) {
       return;
     }
 
     if (password !== confirmPassword) {
-      setValidationErrors(['Password dan konfirmasi password tidak cocok']);
+      showError(
+        errorMessages.validation.passwordMismatch.title,
+        errorMessages.validation.passwordMismatch.message
+      );
       return;
     }
-
-    setValidationErrors([]);
 
     try {
       await updatePassword(password);
       setIsSuccess(true);
+      showSuccess(
+        'Password Reset Successful',
+        'Your password has been reset successfully. You can now log in with your new password.'
+      );
       
       // Redirect to login after 3 seconds
       setTimeout(() => {
         navigate('/login');
       }, 3000);
     } catch (error) {
-      // Error is handled by context
+      // Error is handled by context and notification system
       console.error('Password update failed:', error);
     }
   };
@@ -86,8 +101,8 @@ const ResetPasswordPage: React.FC = () => {
           <div className="container mx-auto px-4">
             <div className="max-w-md mx-auto bg-white rounded-lg shadow-md overflow-hidden">
               <div className="p-6 text-center">
-                <div className="w-16 h-16 bg-error-50 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <AlertCircle size={32} className="text-error-500" />
+                <div className="w-16 h-16 bg-yellow-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Lock size={32} className="text-yellow-600" />
                 </div>
                 
                 <h1 className="font-heading font-bold text-2xl text-accent mb-4">
@@ -99,11 +114,11 @@ const ResetPasswordPage: React.FC = () => {
                 </p>
                 
                 <div className="space-y-3">
-                  <Link to="/forgot-password" className="w-full btn-primary">
+                  <Link to="/forgot-password" className="w-full btn-primary block">
                     Minta Link Baru
                   </Link>
                   
-                  <Link to="/login" className="w-full btn-secondary">
+                  <Link to="/login" className="w-full btn-secondary block">
                     Kembali ke Halaman Masuk
                   </Link>
                 </div>
@@ -130,7 +145,7 @@ const ResetPasswordPage: React.FC = () => {
             <div className="max-w-md mx-auto bg-white rounded-lg shadow-md overflow-hidden">
               <div className="p-6 text-center">
                 <div className="w-16 h-16 bg-success-50 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <CheckCircle size={32} className="text-success-500" />
+                  <Lock size={32} className="text-success-500" />
                 </div>
                 
                 <h1 className="font-heading font-bold text-2xl text-accent mb-4">
@@ -141,7 +156,7 @@ const ResetPasswordPage: React.FC = () => {
                   Password Anda telah berhasil direset. Anda akan dialihkan ke halaman masuk dalam beberapa detik.
                 </p>
                 
-                <Link to="/login" className="w-full btn-primary">
+                <Link to="/login" className="w-full btn-primary block">
                   Masuk Sekarang
                 </Link>
               </div>
@@ -177,23 +192,6 @@ const ResetPasswordPage: React.FC = () => {
                   Masukkan password baru untuk akun Anda
                 </p>
               </div>
-              
-              {(error || validationErrors.length > 0) && (
-                <div className="bg-error-50 border border-error-200 text-error-700 p-3 rounded-md mb-4">
-                  <div className="flex items-start">
-                    <AlertCircle size={18} className="mr-2 mt-0.5 flex-shrink-0" />
-                    <div>
-                      <p className="font-medium">Terjadi kesalahan:</p>
-                      <ul className="text-sm mt-1 space-y-1">
-                        {error && <li>• {error}</li>}
-                        {validationErrors.map((err, index) => (
-                          <li key={index}>• {err}</li>
-                        ))}
-                      </ul>
-                    </div>
-                  </div>
-                </div>
-              )}
               
               <form onSubmit={handleSubmit}>
                 <div className="mb-4">

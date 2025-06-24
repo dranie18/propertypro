@@ -1,16 +1,19 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import Layout from '../components/layout/Layout';
-import { Mail, ArrowLeft, CheckCircle, AlertCircle } from 'lucide-react';
+import { Mail, ArrowLeft, CheckCircle } from 'lucide-react';
 import { Helmet } from 'react-helmet-async';
 import { useAuth } from '../contexts/AuthContext';
+import { useNotification } from '../contexts/NotificationContext';
+import { parseSupabaseError } from '../utils/errorMessages';
 
 const ForgotPasswordPage: React.FC = () => {
   const [email, setEmail] = useState('');
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   
-  const { resetPassword, error, clearError } = useAuth();
+  const { resetPassword, clearError } = useAuth();
+  const { showError, showSuccess, showInfo } = useNotification();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -20,6 +23,10 @@ const ForgotPasswordPage: React.FC = () => {
     // Basic email validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
+      showError(
+        'Invalid Email',
+        'Please enter a valid email address to receive the password reset link.'
+      );
       setIsLoading(false);
       return;
     }
@@ -27,9 +34,13 @@ const ForgotPasswordPage: React.FC = () => {
     try {
       await resetPassword(email);
       setIsSubmitted(true);
-    } catch (error) {
-      // Error is handled by context
-      console.error('Password reset failed:', error);
+      showSuccess(
+        'Reset Link Sent',
+        'We\'ve sent a password reset link to your email address. Please check your inbox.'
+      );
+    } catch (error: any) {
+      const { title, message } = parseSupabaseError(error);
+      showError(title, message);
     } finally {
       setIsLoading(false);
     }
@@ -39,8 +50,13 @@ const ForgotPasswordPage: React.FC = () => {
     setIsLoading(true);
     try {
       await resetPassword(email);
-    } catch (error) {
-      console.error('Resend failed:', error);
+      showSuccess(
+        'Reset Link Sent Again',
+        'We\'ve sent another password reset link to your email address.'
+      );
+    } catch (error: any) {
+      const { title, message } = parseSupabaseError(error);
+      showError(title, message);
     } finally {
       setIsLoading(false);
     }
@@ -106,11 +122,15 @@ const ForgotPasswordPage: React.FC = () => {
                   <p className="text-sm text-neutral-500">
                     Tidak menerima email?{' '}
                     <button
-                      onClick={handleResendEmail}
+                      onClick={() => {
+                        showInfo(
+                          'Check Your Spam Folder',
+                          'The reset link email might be in your spam or junk folder. If you still can\'t find it, click "Resend Email".'
+                        );
+                      }}
                       className="text-primary hover:underline"
-                      disabled={isLoading}
                     >
-                      Kirim ulang
+                      Periksa folder spam
                     </button>
                   </p>
                 </div>
@@ -147,16 +167,6 @@ const ForgotPasswordPage: React.FC = () => {
                   Masukkan alamat email Anda dan kami akan mengirimkan link untuk mereset password
                 </p>
               </div>
-              
-              {error && (
-                <div className="bg-error-50 border border-error-200 text-error-700 p-3 rounded-md mb-4 flex items-start">
-                  <AlertCircle size={18} className="mr-2 mt-0.5 flex-shrink-0" />
-                  <div>
-                    <p className="font-medium">Gagal mengirim email</p>
-                    <p className="text-sm">{error}</p>
-                  </div>
-                </div>
-              )}
               
               <form onSubmit={handleSubmit}>
                 <div className="mb-6">

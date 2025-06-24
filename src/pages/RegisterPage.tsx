@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import Layout from '../components/layout/Layout';
-import { Eye, EyeOff, AlertCircle, CheckCircle } from 'lucide-react';
+import { Eye, EyeOff } from 'lucide-react';
 import { Helmet } from 'react-helmet-async';
 import { useAuth } from '../contexts/AuthContext';
+import { useNotification } from '../contexts/NotificationContext';
+import { parseSupabaseError, errorMessages } from '../utils/errorMessages';
 
 const RegisterPage: React.FC = () => {
   const [formData, setFormData] = useState({
@@ -17,9 +19,9 @@ const RegisterPage: React.FC = () => {
   });
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [validationErrors, setValidationErrors] = useState<string[]>([]);
   
   const { signUp, isAuthenticated, loading, error, clearError } = useAuth();
+  const { showError, showSuccess } = useNotification();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -31,6 +33,13 @@ const RegisterPage: React.FC = () => {
   useEffect(() => {
     clearError();
   }, [clearError]);
+
+  useEffect(() => {
+    if (error) {
+      const { title, message } = parseSupabaseError(error);
+      showError(title, message);
+    }
+  }, [error, showError]);
   
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;
@@ -40,42 +49,58 @@ const RegisterPage: React.FC = () => {
       ...prev,
       [name]: type === 'checkbox' ? checked : value
     }));
-
-    // Clear validation errors when user starts typing
-    if (validationErrors.length > 0) {
-      setValidationErrors([]);
-    }
   };
 
   const validateForm = (): boolean => {
-    const errors: string[] = [];
-
+    // Check full name
     if (!formData.fullName.trim()) {
-      errors.push('Nama lengkap harus diisi');
+      showError('Name Required', 'Please enter your full name to continue.');
+      return false;
     }
 
+    // Check email
     if (!formData.email.trim()) {
-      errors.push('Email harus diisi');
+      showError('Email Required', 'Please enter your email address to continue.');
+      return false;
     } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-      errors.push('Format email tidak valid');
+      showError(
+        errorMessages.validation.invalidEmail.title,
+        errorMessages.validation.invalidEmail.message
+      );
+      return false;
     }
 
+    // Check password
     if (!formData.password) {
-      errors.push('Password harus diisi');
+      showError('Password Required', 'Please create a password for your account.');
+      return false;
     } else if (formData.password.length < 8) {
-      errors.push('Password minimal 8 karakter');
+      showError(
+        errorMessages.validation.passwordTooShort.title,
+        errorMessages.validation.passwordTooShort.message
+      );
+      return false;
     }
 
+    // Check password confirmation
     if (formData.password !== formData.confirmPassword) {
-      errors.push('Password dan konfirmasi password tidak cocok');
+      showError(
+        errorMessages.validation.passwordMismatch.title,
+        errorMessages.validation.passwordMismatch.message
+      );
+      return false;
     }
 
+    // Check terms agreement
     if (!formData.agreeTerms) {
-      errors.push('Anda harus menyetujui syarat dan ketentuan');
+      showError(
+        'Terms Agreement Required',
+        'Please agree to the Terms and Conditions to create an account.'
+      );
+      return false;
     }
 
-    setValidationErrors(errors);
-    return errors.length === 0;
+    return true;
   };
   
   const handleRegister = async (e: React.FormEvent) => {
@@ -92,10 +117,17 @@ const RegisterPage: React.FC = () => {
         role: formData.role,
       });
 
-      // Show success message or redirect
-      // Navigation will be handled by the useEffect above if auto-confirmed
+      showSuccess(
+        'Registration Successful',
+        'Your account has been created successfully. You can now log in.'
+      );
+      
+      // Navigate to login page after successful registration
+      setTimeout(() => {
+        navigate('/login');
+      }, 2000);
     } catch (error) {
-      // Error is handled by the context
+      // Error is handled by the context and notification system
       console.error('Registration failed:', error);
     }
   };
@@ -115,23 +147,6 @@ const RegisterPage: React.FC = () => {
               <h1 className="font-heading font-bold text-2xl text-accent mb-6 text-center">
                 Daftar di <span className="text-primary">Properti Pro</span>
               </h1>
-              
-              {(error || validationErrors.length > 0) && (
-                <div className="bg-error-50 border border-error-200 text-error-700 p-3 rounded-md mb-4">
-                  <div className="flex items-start">
-                    <AlertCircle size={18} className="mr-2 mt-0.5 flex-shrink-0" />
-                    <div>
-                      <p className="font-medium">Terjadi kesalahan:</p>
-                      <ul className="text-sm mt-1 space-y-1">
-                        {error && <li>• {error}</li>}
-                        {validationErrors.map((err, index) => (
-                          <li key={index}>• {err}</li>
-                        ))}
-                      </ul>
-                    </div>
-                  </div>
-                </div>
-              )}
               
               <form onSubmit={handleRegister}>
                 <div className="mb-4">
