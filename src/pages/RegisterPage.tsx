@@ -63,8 +63,8 @@ const RegisterPage: React.FC = () => {
     // Check full name
     if (!formData.fullName.trim()) {
       showError(
-        'Name Required', 
-        'Please enter your full name to continue.'
+        authMessages.register.nameRequired.title,
+        authMessages.register.nameRequired.message
       );
       return false;
     }
@@ -72,8 +72,8 @@ const RegisterPage: React.FC = () => {
     // Check email
     if (!formData.email.trim()) {
       showError(
-        'Email Required', 
-        'Please enter your email address to continue.'
+        authMessages.register.emailRequired.title,
+        authMessages.register.emailRequired.message
       );
       return false;
     } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
@@ -87,8 +87,8 @@ const RegisterPage: React.FC = () => {
     // Check password
     if (!formData.password) {
       showError(
-        'Password Required', 
-        'Please create a password for your account.'
+        authMessages.register.passwordRequired.title,
+        authMessages.register.passwordRequired.message
       );
       return false;
     } else if (formData.password.length < 8) {
@@ -111,8 +111,8 @@ const RegisterPage: React.FC = () => {
     // Check terms agreement
     if (!formData.agreeTerms) {
       showError(
-        'Terms Agreement Required',
-        'Please agree to the Terms and Conditions to create an account.'
+        authMessages.register.termsRequired.title,
+        authMessages.register.termsRequired.message
       );
       return false;
     }

@@ -33,6 +33,10 @@ export const authMessages = {
     success: {
       title: 'Login Successful',
       message: 'Welcome back! You have successfully logged in.'
+    },
+    adminSuccess: {
+      title: 'Admin Login Successful',
+      message: 'Welcome to the admin panel. You have successfully logged in.'
     }
   },
   
@@ -57,6 +61,22 @@ export const authMessages = {
     missingFields: {
       title: 'Missing Information',
       message: 'Please fill in all required fields.'
+    },
+    nameRequired: {
+      title: 'Name Required',
+      message: 'Please enter your full name to continue.'
+    },
+    emailRequired: {
+      title: 'Email Required',
+      message: 'Please enter your email address to continue.'
+    },
+    passwordRequired: {
+      title: 'Password Required',
+      message: 'Please create a password for your account.'
+    },
+    termsRequired: {
+      title: 'Terms Agreement Required',
+      message: 'Please agree to the Terms and Conditions to create an account.'
     },
     success: {
       title: 'Registration Successful',
