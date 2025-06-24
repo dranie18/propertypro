@@ -113,11 +113,15 @@ function DataTable<T extends Record<string, any>>({
                   className="w-full pl-10 pr-4 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
+                  aria-label="Search data"
                 />
               </div>
             )}
             {filterable && (
-              <button className="flex items-center px-4 py-2 border border-neutral-300 rounded-lg hover:bg-neutral-50">
+              <button 
+                className="flex items-center px-4 py-2 border border-neutral-300 rounded-lg hover:bg-neutral-50"
+                aria-label="Filter data"
+              >
                 <Filter size={18} className="mr-2" />
                 Filter
               </button>
@@ -128,7 +132,7 @@ function DataTable<T extends Record<string, any>>({
 
       {/* Table */}
       <div className="overflow-x-auto">
-        <table className="w-full">
+        <table className="w-full" role="grid">
           <thead className="bg-neutral-50">
             <tr>
               {columns.map((column, index) => (
@@ -139,6 +143,14 @@ function DataTable<T extends Record<string, any>>({
                   }`}
                   style={{ width: column.width }}
                   onClick={() => column.sortable && handleSort(String(column.key))}
+                  scope="col"
+                  aria-sort={
+                    sortConfig?.key === column.key
+                      ? sortConfig.direction === 'asc'
+                        ? 'ascending'
+                        : 'descending'
+                      : undefined
+                  }
                 >
                   <div className="flex items-center space-x-1">
                     <span>{column.title}</span>
@@ -151,7 +163,7 @@ function DataTable<T extends Record<string, any>>({
                 </th>
               ))}
               {actions && (
-                <th className="px-6 py-3 text-right text-xs font-medium text-neutral-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-right text-xs font-medium text-neutral-500 uppercase tracking-wider" scope="col">
                   Aksi
                 </th>
               )}
@@ -165,6 +177,15 @@ function DataTable<T extends Record<string, any>>({
                   onRowClick ? 'cursor-pointer hover:bg-neutral-50' : ''
                 }`}
                 onClick={() => onRowClick?.(record)}
+                tabIndex={onRowClick ? 0 : undefined}
+                role={onRowClick ? "button" : undefined}
+                aria-label={onRowClick ? `View details of row ${index + 1}` : undefined}
+                onKeyDown={(e) => {
+                  if (onRowClick && (e.key === 'Enter' || e.key === ' ')) {
+                    e.preventDefault();
+                    onRowClick(record);
+                  }
+                }}
               >
                 {columns.map((column, colIndex) => (
                   <td key={colIndex} className="px-6 py-4 whitespace-nowrap text-sm text-neutral-900">
@@ -202,6 +223,7 @@ function DataTable<T extends Record<string, any>>({
               onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
               disabled={currentPage === 1}
               className="p-2 rounded-lg border border-neutral-300 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-neutral-50"
+              aria-label="Previous page"
             >
               <ChevronLeft size={16} />
             </button>
@@ -212,6 +234,7 @@ function DataTable<T extends Record<string, any>>({
               onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
               disabled={currentPage === totalPages}
               className="p-2 rounded-lg border border-neutral-300 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-neutral-50"
+              aria-label="Next page"
             >
               <ChevronRight size={16} />
             </button>

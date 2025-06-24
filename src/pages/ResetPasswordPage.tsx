@@ -207,17 +207,19 @@ const ResetPasswordPage: React.FC = () => {
                       required
                       minLength={8}
                       disabled={loading}
+                      aria-describedby="password-requirements"
                     />
                     <button
                       type="button"
                       className="absolute right-3 top-1/2 transform -translate-y-1/2 text-neutral-500"
                       onClick={() => setShowPassword(!showPassword)}
                       tabIndex={-1}
+                      aria-label={showPassword ? "Hide password" : "Show password"}
                     >
                       {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                     </button>
                   </div>
-                  <div className="mt-2 text-xs text-neutral-500">
+                  <div id="password-requirements" className="mt-2 text-xs text-neutral-500">
                     <p>Password harus mengandung:</p>
                     <ul className="list-disc list-inside mt-1 space-y-1">
                       <li>Minimal 8 karakter</li>
@@ -241,12 +243,14 @@ const ResetPasswordPage: React.FC = () => {
                       onChange={(e) => setConfirmPassword(e.target.value)}
                       required
                       disabled={loading}
+                      aria-describedby="confirm-password-error"
                     />
                     <button
                       type="button"
                       className="absolute right-3 top-1/2 transform -translate-y-1/2 text-neutral-500"
                       onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                       tabIndex={-1}
+                      aria-label={showConfirmPassword ? "Hide password" : "Show password"}
                     >
                       {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                     </button>

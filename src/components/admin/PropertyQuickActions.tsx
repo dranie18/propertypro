@@ -69,6 +69,7 @@ const PropertyQuickActions: React.FC<PropertyQuickActionsProps> = ({
               }}
               className={`p-1 rounded hover:bg-neutral-100 ${action.className}`}
               title={action.label}
+              aria-label={action.label}
             >
               <Icon size={16} />
             </button>
@@ -82,6 +83,7 @@ const PropertyQuickActions: React.FC<PropertyQuickActionsProps> = ({
             }}
             className="p-1 rounded hover:bg-neutral-100 text-neutral-600 hover:text-neutral-800"
             title="Edit"
+            aria-label="Edit property"
           >
             <Edit size={16} />
           </button>
@@ -94,6 +96,7 @@ const PropertyQuickActions: React.FC<PropertyQuickActionsProps> = ({
             }}
             className="p-1 rounded hover:bg-neutral-100 text-red-600 hover:text-red-800"
             title="Hapus"
+            aria-label="Delete property"
           >
             <Trash2 size={16} />
           </button>
@@ -111,6 +114,7 @@ const PropertyQuickActions: React.FC<PropertyQuickActionsProps> = ({
             key={action.key}
             onClick={() => action.onClick()}
             className={`inline-flex items-center px-3 py-1 rounded-md text-sm font-medium transition-colors ${action.className} hover:bg-opacity-10`}
+            aria-label={action.label}
           >
             <Icon size={14} className="mr-1" />
             {action.label}
@@ -122,6 +126,7 @@ const PropertyQuickActions: React.FC<PropertyQuickActionsProps> = ({
         <button
           onClick={() => onEdit(propertyId)}
           className="inline-flex items-center px-3 py-1 rounded-md text-sm font-medium text-neutral-600 hover:text-neutral-800 hover:bg-neutral-100"
+          aria-label="Edit property"
         >
           <Edit size={14} className="mr-1" />
           Edit
@@ -132,6 +137,7 @@ const PropertyQuickActions: React.FC<PropertyQuickActionsProps> = ({
         <button
           onClick={() => onDelete(propertyId)}
           className="inline-flex items-center px-3 py-1 rounded-md text-sm font-medium text-red-600 hover:text-red-800 hover:bg-red-50"
+          aria-label="Delete property"
         >
           <Trash2 size={14} className="mr-1" />
           Hapus

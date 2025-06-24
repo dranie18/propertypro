@@ -334,6 +334,7 @@ const UserProperties: React.FC = () => {
                 className="w-full pl-10 pr-4 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
+                aria-label="Search properties"
               />
             </div>
             
@@ -341,6 +342,8 @@ const UserProperties: React.FC = () => {
               <button
                 onClick={() => setShowFilters(!showFilters)}
                 className="px-4 py-2 border border-neutral-300 rounded-lg hover:bg-neutral-50 flex items-center"
+                aria-expanded={showFilters}
+                aria-controls="filter-options"
               >
                 <Filter size={18} className="mr-2" />
                 Filters
@@ -351,6 +354,8 @@ const UserProperties: React.FC = () => {
                   onClick={() => setViewMode('grid')}
                   className={`p-2 ${viewMode === 'grid' ? 'bg-primary text-white' : 'bg-white text-neutral-700'}`}
                   title="Grid View"
+                  aria-label="Switch to grid view"
+                  aria-pressed={viewMode === 'grid'}
                 >
                   <Grid size={18} />
                 </button>
@@ -358,6 +363,8 @@ const UserProperties: React.FC = () => {
                   onClick={() => setViewMode('list')}
                   className={`p-2 ${viewMode === 'list' ? 'bg-primary text-white' : 'bg-white text-neutral-700'}`}
                   title="List View"
+                  aria-label="Switch to list view"
+                  aria-pressed={viewMode === 'list'}
                 >
                   <ListIcon size={18} />
                 </button>
@@ -366,12 +373,13 @@ const UserProperties: React.FC = () => {
           </div>
           
           {showFilters && (
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-4 border-t border-neutral-200">
+            <div id="filter-options" className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-4 border-t border-neutral-200">
               <div>
-                <label className="block text-sm font-medium text-neutral-700 mb-1">
+                <label htmlFor="status-filter" className="block text-sm font-medium text-neutral-700 mb-1">
                   Status
                 </label>
                 <select
+                  id="status-filter"
                   className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50"
                   value={statusFilter}
                   onChange={(e) => setStatusFilter(e.target.value)}
@@ -385,10 +393,11 @@ const UserProperties: React.FC = () => {
               </div>
               
               <div>
-                <label className="block text-sm font-medium text-neutral-700 mb-1">
+                <label htmlFor="type-filter" className="block text-sm font-medium text-neutral-700 mb-1">
                   Property Type
                 </label>
                 <select
+                  id="type-filter"
                   className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50"
                   value={typeFilter}
                   onChange={(e) => setTypeFilter(e.target.value)}
@@ -403,10 +412,11 @@ const UserProperties: React.FC = () => {
               </div>
               
               <div>
-                <label className="block text-sm font-medium text-neutral-700 mb-1">
+                <label htmlFor="sort-by" className="block text-sm font-medium text-neutral-700 mb-1">
                   Sort By
                 </label>
                 <select
+                  id="sort-by"
                   className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50"
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value)}
@@ -468,6 +478,7 @@ const UserProperties: React.FC = () => {
                           onClick={() => editProperty(property.id)}
                           className="p-2 text-neutral-600 hover:text-primary hover:bg-neutral-100 rounded"
                           title="Edit Property"
+                          aria-label="Edit property"
                         >
                           <Edit size={16} />
                         </button>
@@ -475,6 +486,7 @@ const UserProperties: React.FC = () => {
                           onClick={() => confirmDeleteProperty(property.id)}
                           className="p-2 text-neutral-600 hover:text-red-600 hover:bg-red-50 rounded"
                           title="Delete Property"
+                          aria-label="Delete property"
                         >
                           <Trash2 size={16} />
                         </button>
@@ -483,6 +495,7 @@ const UserProperties: React.FC = () => {
                       <Link
                         to={`/properti/${property.id}`}
                         className="text-primary hover:underline text-sm flex items-center"
+                        aria-label={`View details of ${property.title}`}
                       >
                         View Details
                         <Eye size={14} className="ml-1" />
@@ -550,6 +563,7 @@ const UserProperties: React.FC = () => {
                               to={`/properti/${property.id}`}
                               className="p-1 text-neutral-600 hover:text-primary hover:bg-neutral-100 rounded"
                               title="View Property"
+                              aria-label={`View ${property.title}`}
                             >
                               <Eye size={16} />
                             </Link>
@@ -557,6 +571,7 @@ const UserProperties: React.FC = () => {
                               onClick={() => editProperty(property.id)}
                               className="p-1 text-neutral-600 hover:text-primary hover:bg-neutral-100 rounded"
                               title="Edit Property"
+                              aria-label={`Edit ${property.title}`}
                             >
                               <Edit size={16} />
                             </button>
@@ -564,6 +579,7 @@ const UserProperties: React.FC = () => {
                               onClick={() => confirmDeleteProperty(property.id)}
                               className="p-1 text-neutral-600 hover:text-red-600 hover:bg-red-50 rounded"
                               title="Delete Property"
+                              aria-label={`Delete ${property.title}`}
                             >
                               <Trash2 size={16} />
                             </button>
@@ -600,9 +616,14 @@ const UserProperties: React.FC = () => {
       
       {/* Delete Confirmation Modal */}
       {showDeleteModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="delete-modal-title"
+        >
           <div className="bg-white rounded-lg max-w-md w-full p-6">
-            <h3 className="text-lg font-semibold text-neutral-900 mb-4">Confirm Deletion</h3>
+            <h3 id="delete-modal-title" className="text-lg font-semibold text-neutral-900 mb-4">Confirm Deletion</h3>
             <p className="text-neutral-600 mb-6">
               Are you sure you want to delete this property? This action cannot be undone.
             </p>

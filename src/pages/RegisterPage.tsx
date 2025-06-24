@@ -180,6 +180,7 @@ const RegisterPage: React.FC = () => {
                     onChange={handleChange}
                     required
                     disabled={loading}
+                    aria-describedby="fullName-error"
                   />
                 </div>
                 
@@ -197,6 +198,7 @@ const RegisterPage: React.FC = () => {
                     onChange={handleChange}
                     required
                     disabled={loading}
+                    aria-describedby="email-error"
                   />
                 </div>
                 
@@ -249,17 +251,19 @@ const RegisterPage: React.FC = () => {
                       required
                       minLength={8}
                       disabled={loading}
+                      aria-describedby="password-requirements"
                     />
                     <button
                       type="button"
                       className="absolute right-3 top-1/2 transform -translate-y-1/2 text-neutral-500"
                       onClick={() => setShowPassword(!showPassword)}
                       tabIndex={-1}
+                      aria-label={showPassword ? "Hide password" : "Show password"}
                     >
                       {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                     </button>
                   </div>
-                  <p className="text-xs text-neutral-500 mt-1">
+                  <p id="password-requirements" className="text-xs text-neutral-500 mt-1">
                     Password minimal 8 karakter
                   </p>
                 </div>
@@ -279,12 +283,14 @@ const RegisterPage: React.FC = () => {
                       onChange={handleChange}
                       required
                       disabled={loading}
+                      aria-describedby="confirm-password-error"
                     />
                     <button
                       type="button"
                       className="absolute right-3 top-1/2 transform -translate-y-1/2 text-neutral-500"
                       onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                       tabIndex={-1}
+                      aria-label={showConfirmPassword ? "Hide password" : "Show password"}
                     >
                       {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                     </button>

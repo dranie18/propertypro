@@ -113,6 +113,7 @@ const ForgotPasswordPage: React.FC = () => {
                     onClick={handleResendEmail}
                     disabled={isLoading}
                     className="w-full btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
+                    aria-label="Resend email"
                   >
                     {isLoading ? 'Mengirim...' : 'Kirim Ulang Email'}
                   </button>
@@ -137,6 +138,7 @@ const ForgotPasswordPage: React.FC = () => {
                         );
                       }}
                       className="text-primary hover:underline"
+                      aria-label="Check spam folder instructions"
                     >
                       Periksa folder spam
                     </button>
@@ -192,6 +194,7 @@ const ForgotPasswordPage: React.FC = () => {
                       onChange={(e) => setEmail(e.target.value)}
                       required
                       disabled={isLoading}
+                      aria-describedby="email-error"
                     />
                   </div>
                 </div>

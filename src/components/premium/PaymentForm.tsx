@@ -121,80 +121,96 @@ const PaymentForm: React.FC<PaymentFormProps> = ({
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-neutral-700 mb-1">
+              <label htmlFor="firstName" className="block text-sm font-medium text-neutral-700 mb-1">
                 First Name *
               </label>
               <input
                 type="text"
+                id="firstName"
                 className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 ${
                   errors.firstName ? 'border-red-500' : 'border-neutral-300'
                 }`}
                 value={billingDetails.firstName}
                 onChange={(e) => handleInputChange('firstName', e.target.value)}
                 placeholder="Enter your first name"
+                required
+                aria-describedby={errors.firstName ? "firstName-error" : undefined}
+                aria-invalid={errors.firstName ? "true" : "false"}
               />
               {errors.firstName && (
-                <p className="text-red-500 text-sm mt-1">{errors.firstName}</p>
+                <p id="firstName-error" className="text-red-500 text-sm mt-1">{errors.firstName}</p>
               )}
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-neutral-700 mb-1">
+              <label htmlFor="lastName" className="block text-sm font-medium text-neutral-700 mb-1">
                 Last Name *
               </label>
               <input
                 type="text"
+                id="lastName"
                 className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 ${
                   errors.lastName ? 'border-red-500' : 'border-neutral-300'
                 }`}
                 value={billingDetails.lastName}
                 onChange={(e) => handleInputChange('lastName', e.target.value)}
                 placeholder="Enter your last name"
+                required
+                aria-describedby={errors.lastName ? "lastName-error" : undefined}
+                aria-invalid={errors.lastName ? "true" : "false"}
               />
               {errors.lastName && (
-                <p className="text-red-500 text-sm mt-1">{errors.lastName}</p>
+                <p id="lastName-error" className="text-red-500 text-sm mt-1">{errors.lastName}</p>
               )}
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-neutral-700 mb-1">
+              <label htmlFor="email" className="block text-sm font-medium text-neutral-700 mb-1">
                 Email Address *
               </label>
               <div className="relative">
                 <Mail size={18} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-neutral-500" />
                 <input
                   type="email"
+                  id="email"
                   className={`w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 ${
                     errors.email ? 'border-red-500' : 'border-neutral-300'
                   }`}
                   value={billingDetails.email}
                   onChange={(e) => handleInputChange('email', e.target.value)}
                   placeholder="Enter your email"
+                  required
+                  aria-describedby={errors.email ? "email-error" : undefined}
+                  aria-invalid={errors.email ? "true" : "false"}
                 />
               </div>
               {errors.email && (
-                <p className="text-red-500 text-sm mt-1">{errors.email}</p>
+                <p id="email-error" className="text-red-500 text-sm mt-1">{errors.email}</p>
               )}
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-neutral-700 mb-1">
+              <label htmlFor="phone" className="block text-sm font-medium text-neutral-700 mb-1">
                 Phone Number *
               </label>
               <div className="relative">
                 <Phone size={18} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-neutral-500" />
                 <input
                   type="tel"
+                  id="phone"
                   className={`w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 ${
                     errors.phone ? 'border-red-500' : 'border-neutral-300'
                   }`}
                   value={billingDetails.phone}
                   onChange={(e) => handleInputChange('phone', e.target.value)}
                   placeholder="+62 812 3456 7890"
+                  required
+                  aria-describedby={errors.phone ? "phone-error" : undefined}
+                  aria-invalid={errors.phone ? "true" : "false"}
                 />
               </div>
               {errors.phone && (
-                <p className="text-red-500 text-sm mt-1">{errors.phone}</p>
+                <p id="phone-error" className="text-red-500 text-sm mt-1">{errors.phone}</p>
               )}
             </div>
 
@@ -207,64 +223,77 @@ const PaymentForm: React.FC<PaymentFormProps> = ({
             </div>
 
             <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-neutral-700 mb-1">
+              <label htmlFor="address" className="block text-sm font-medium text-neutral-700 mb-1">
                 Street Address *
               </label>
               <input
                 type="text"
+                id="address"
                 className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 ${
                   errors.address ? 'border-red-500' : 'border-neutral-300'
                 }`}
                 value={billingDetails.address}
                 onChange={(e) => handleInputChange('address', e.target.value)}
                 placeholder="Enter your street address"
+                required
+                aria-describedby={errors.address ? "address-error" : undefined}
+                aria-invalid={errors.address ? "true" : "false"}
               />
               {errors.address && (
-                <p className="text-red-500 text-sm mt-1">{errors.address}</p>
+                <p id="address-error" className="text-red-500 text-sm mt-1">{errors.address}</p>
               )}
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-neutral-700 mb-1">
+              <label htmlFor="city" className="block text-sm font-medium text-neutral-700 mb-1">
                 City *
               </label>
               <input
                 type="text"
+                id="city"
                 className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 ${
                   errors.city ? 'border-red-500' : 'border-neutral-300'
                 }`}
                 value={billingDetails.city}
                 onChange={(e) => handleInputChange('city', e.target.value)}
                 placeholder="Enter your city"
+                required
+                aria-describedby={errors.city ? "city-error" : undefined}
+                aria-invalid={errors.city ? "true" : "false"}
               />
               {errors.city && (
-                <p className="text-red-500 text-sm mt-1">{errors.city}</p>
+                <p id="city-error" className="text-red-500 text-sm mt-1">{errors.city}</p>
               )}
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-neutral-700 mb-1">
+              <label htmlFor="postalCode" className="block text-sm font-medium text-neutral-700 mb-1">
                 Postal Code *
               </label>
               <input
                 type="text"
+                id="postalCode"
                 className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 ${
                   errors.postalCode ? 'border-red-500' : 'border-neutral-300'
                 }`}
                 value={billingDetails.postalCode}
                 onChange={(e) => handleInputChange('postalCode', e.target.value)}
                 placeholder="12345"
+                required
+                aria-describedby={errors.postalCode ? "postalCode-error" : undefined}
+                aria-invalid={errors.postalCode ? "true" : "false"}
               />
               {errors.postalCode && (
-                <p className="text-red-500 text-sm mt-1">{errors.postalCode}</p>
+                <p id="postalCode-error" className="text-red-500 text-sm mt-1">{errors.postalCode}</p>
               )}
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-neutral-700 mb-1">
+              <label htmlFor="country" className="block text-sm font-medium text-neutral-700 mb-1">
                 Country
               </label>
               <select
+                id="country"
                 className="w-full px-4 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500"
                 value={billingDetails.country}
                 onChange={(e) => handleInputChange('country', e.target.value)}
@@ -302,6 +331,7 @@ const PaymentForm: React.FC<PaymentFormProps> = ({
               type="submit"
               disabled={isLoading}
               className="w-full bg-gradient-to-r from-yellow-500 to-yellow-600 text-white font-semibold py-4 px-6 rounded-lg hover:from-yellow-600 hover:to-yellow-700 transition-all duration-300 flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
+              aria-label={isLoading ? "Processing payment" : `Pay $${amount} now`}
             >
               {isLoading ? (
                 <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white mr-3"></div>
