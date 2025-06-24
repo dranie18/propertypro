@@ -18,14 +18,18 @@ const LocationCard: React.FC<LocationCardProps> = ({
   slug 
 }) => {
   return (
-    <Link to={`/lokasi/${slug}`} className="relative overflow-hidden rounded-2xl group h-60">
+    <Link 
+      to={`/lokasi/${slug}`} 
+      className="relative overflow-hidden rounded-2xl group h-60"
+      aria-label={`Lihat properti di ${name}, ${province}`}
+    >
       <img 
         src={image} 
         alt={`Properti di ${name}`} 
         className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
       />
-      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent flex flex-col justify-end p-5">
-        <h3 className="font-heading text-white font-semibold text-xl mb-1">
+      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent group-hover:from-black/90 group-hover:via-black/60 transition-all duration-300 flex flex-col justify-end p-5">
+        <h3 className="font-heading text-white font-semibold text-xl mb-1 transform group-hover:translate-y-0 transition-transform duration-300">
           {name}
         </h3>
         <div className="flex items-center justify-between">
@@ -33,7 +37,7 @@ const LocationCard: React.FC<LocationCardProps> = ({
             <p className="text-neutral-200 text-sm">{province}</p>
             <p className="text-white text-sm">{propertyCount} properti</p>
           </div>
-          <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+          <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-300 transform group-hover:translate-x-0 translate-x-4">
             <ArrowRight className="text-primary" size={20} />
           </div>
         </div>
