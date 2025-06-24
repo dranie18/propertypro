@@ -15,16 +15,16 @@ const Footer: React.FC = () => {
               Platform jual beli dan sewa properti terpercaya di Indonesia dengan beragam pilihan properti berkualitas.
             </p>
             <div className="flex space-x-4">
-              <a href="#" className="text-white hover:text-primary transition-colors">
+              <a href="https://facebook.com/propertipro" className="text-white hover:text-primary transition-colors" aria-label="Facebook">
                 <Facebook size={20} />
               </a>
-              <a href="#" className="text-white hover:text-primary transition-colors">
+              <a href="https://twitter.com/propertipro" className="text-white hover:text-primary transition-colors" aria-label="Twitter">
                 <Twitter size={20} />
               </a>
-              <a href="#" className="text-white hover:text-primary transition-colors">
+              <a href="https://instagram.com/propertipro" className="text-white hover:text-primary transition-colors" aria-label="Instagram">
                 <Instagram size={20} />
               </a>
-              <a href="#" className="text-white hover:text-primary transition-colors">
+              <a href="https://linkedin.com/company/propertipro" className="text-white hover:text-primary transition-colors" aria-label="LinkedIn">
                 <Linkedin size={20} />
               </a>
             </div>
@@ -51,6 +51,9 @@ const Footer: React.FC = () => {
               <li>
                 <Link to="/jual/ruko" className="hover:text-primary transition-colors">Ruko Dijual</Link>
               </li>
+              <li>
+                <Link to="/premium/features" className="hover:text-primary transition-colors">Premium Listings</Link>
+              </li>
             </ul>
           </div>
 
@@ -72,6 +75,9 @@ const Footer: React.FC = () => {
               <li>
                 <Link to="/syarat-ketentuan" className="hover:text-primary transition-colors">Syarat & Ketentuan</Link>
               </li>
+              <li>
+                <Link to="/faq" className="hover:text-primary transition-colors">FAQ</Link>
+              </li>
             </ul>
           </div>
 
@@ -84,11 +90,11 @@ const Footer: React.FC = () => {
               </li>
               <li className="flex items-center space-x-3">
                 <Phone size={20} className="flex-shrink-0" />
-                <span>+62 21 1234 5678</span>
+                <a href="tel:+6221123456789" className="hover:text-primary transition-colors">+62 21 1234 5678</a>
               </li>
               <li className="flex items-center space-x-3">
                 <Mail size={20} className="flex-shrink-0" />
-                <span>info@propertipro.id</span>
+                <a href="mailto:info@propertipro.id" className="hover:text-primary transition-colors">info@propertipro.id</a>
               </li>
             </ul>
           </div>
@@ -96,8 +102,16 @@ const Footer: React.FC = () => {
 
         <hr className="border-neutral-700 my-6" />
 
-        <div className="text-center text-neutral-400 text-sm">
-          &copy; {new Date().getFullYear()} Properti Pro. Hak Cipta Dilindungi.
+        <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4">
+          <div className="text-neutral-400 text-sm">
+            &copy; {new Date().getFullYear()} Properti Pro. Hak Cipta Dilindungi.
+          </div>
+          <div className="flex flex-wrap gap-4 text-sm text-neutral-400">
+            <Link to="/sitemap" className="hover:text-primary transition-colors">Sitemap</Link>
+            <Link to="/user/dashboard" className="hover:text-primary transition-colors">User Dashboard</Link>
+            <Link to="/dashboard" className="hover:text-primary transition-colors">Agent Dashboard</Link>
+            <Link to="/admin/login" className="hover:text-primary transition-colors">Admin Login</Link>
+          </div>
         </div>
       </div>
     </footer>
