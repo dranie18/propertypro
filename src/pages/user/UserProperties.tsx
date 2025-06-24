@@ -12,7 +12,8 @@ import {
   Eye, 
   AlertCircle,
   CheckCircle,
-  Home
+  Home,
+  MapPin
 } from 'lucide-react';
 import { formatPrice } from '../../utils/formatter';
 
