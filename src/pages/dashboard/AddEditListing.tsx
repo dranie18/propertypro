@@ -12,18 +12,21 @@ import {
 } from 'lucide-react';
 import { Helmet } from 'react-helmet-async';
 import { provinces, cities, districts } from '../../data/locations';
+import { supabase } from '../../lib/supabase';
+import { useAuth } from '../../contexts/AuthContext';
+import { useToast } from '../../contexts/ToastContext';
 
 interface ListingFormData {
   title: string;
   description: string;
-  type: string;
+  propertyType: 'rumah' | 'apartemen' | 'ruko' | 'tanah';
   purpose: 'jual' | 'sewa';
-  price: string;
+  price: number;
   priceUnit: 'juta' | 'miliar';
-  bedrooms: string;
-  bathrooms: string;
-  buildingSize: string;
-  landSize: string;
+  bedrooms: number;
+  bathrooms: number;
+  buildingSize: number;
+  landSize: number;
   province: string;
   city: string;
   district: string;
@@ -36,6 +39,8 @@ interface ListingFormData {
 const AddEditListing: React.FC = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const { showSuccess, showError } = useToast();
   const isEdit = !!id;
   
   const [isLoading, setIsLoading] = useState(false);
@@ -46,14 +51,14 @@ const AddEditListing: React.FC = () => {
   const [formData, setFormData] = useState<ListingFormData>({
     title: '',
     description: '',
-    type: 'rumah',
+    propertyType: 'rumah',
     purpose: 'jual',
-    price: '',
+    price: 0,
     priceUnit: 'juta',
-    bedrooms: '',
-    bathrooms: '',
-    buildingSize: '',
-    landSize: '',
+    bedrooms: 0,
+    bathrooms: 0,
+    buildingSize: 0,
+    landSize: 0,
     province: '',
     city: '',
     district: '',
@@ -66,32 +71,77 @@ const AddEditListing: React.FC = () => {
   useEffect(() => {
     if (isEdit && id) {
       // Load existing listing data
-      setIsLoading(true);
-      setTimeout(() => {
-        // Mock data for editing
-        setFormData({
-          title: 'Rumah Minimalis 2 Lantai di Bintaro',
-          description: 'Rumah baru dengan desain minimalis modern, lokasi strategis dekat dengan pusat perbelanjaan dan sekolah.',
-          type: 'rumah',
-          purpose: 'jual',
-          price: '2.5',
-          priceUnit: 'miliar',
-          bedrooms: '4',
-          bathrooms: '3',
-          buildingSize: '150',
-          landSize: '200',
-          province: 'p5',
-          city: 'c13',
-          district: 'd9',
-          address: 'Jl. Bintaro Utama No. 123',
-          features: ['Carport', 'Taman', 'Security 24 Jam'],
-          images: ['https://images.pexels.com/photos/106399/pexels-photo-106399.jpeg'],
-          makePremium: false
-        });
-        setIsLoading(false);
-      }, 1000);
+      fetchListing(id);
     }
   }, [isEdit, id]);
+
+  const fetchListing = async (listingId: string) => {
+    setIsLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('listings')
+        .select('*')
+        .eq('id', listingId)
+        .single();
+
+      if (error) {
+        throw error;
+      }
+
+      if (data) {
+        // Parse location data
+        const locationParts = data.location.split(', ');
+        const districtName = locationParts[0] || '';
+        const cityName = locationParts[1] || '';
+        const provinceName = locationParts[2] || '';
+
+        // Find IDs from names
+        const provinceId = provinces.find(p => p.name === provinceName)?.id || '';
+        const cityId = cities.find(c => c.name === cityName && c.provinceId === provinceId)?.id || '';
+        const districtId = districts.find(d => d.name === districtName && d.cityId === cityId)?.id || '';
+
+        // Convert property data to form data
+        setFormData({
+          title: data.title,
+          description: data.description,
+          propertyType: data.property_type,
+          purpose: data.status === 'tersedia' ? 'jual' : 'sewa', // Map status to purpose
+          price: parseFloat(data.price),
+          priceUnit: parseFloat(data.price) >= 1000 ? 'miliar' : 'juta',
+          bedrooms: data.bedrooms || 0,
+          bathrooms: data.bathrooms || 0,
+          buildingSize: data.square_meters,
+          landSize: data.land_size || 0,
+          province: provinceId,
+          city: cityId,
+          district: districtId,
+          address: data.address || '',
+          features: data.features || [],
+          images: [], // We'll need to fetch images separately
+          makePremium: false
+        });
+
+        // Fetch property media (images)
+        const { data: mediaData, error: mediaError } = await supabase
+          .from('property_media')
+          .select('*')
+          .eq('listing_id', listingId)
+          .order('is_primary', { ascending: false });
+
+        if (!mediaError && mediaData) {
+          setFormData(prev => ({
+            ...prev,
+            images: mediaData.map(item => item.media_url)
+          }));
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching listing:', error);
+      showError('Error', 'Failed to load property data. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   useEffect(() => {
     if (formData.province) {
@@ -114,7 +164,13 @@ const AddEditListing: React.FC = () => {
   }, [formData.city]);
 
   const handleInputChange = (field: keyof ListingFormData, value: any) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+    // Convert numeric string inputs to numbers
+    if (['price', 'bedrooms', 'bathrooms', 'buildingSize', 'landSize'].includes(field)) {
+      const numValue = value === '' ? 0 : parseFloat(value);
+      setFormData(prev => ({ ...prev, [field]: numValue }));
+    } else {
+      setFormData(prev => ({ ...prev, [field]: value }));
+    }
   };
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -158,21 +214,104 @@ const AddEditListing: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!user) {
+      showError('Authentication Error', 'You must be logged in to create or edit listings.');
+      return;
+    }
+    
     setIsLoading(true);
 
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      // Get location names from IDs
+      const province = provinces.find(p => p.id === formData.province)?.name || '';
+      const city = cities.find(c => c.id === formData.city)?.name || '';
+      const district = districts.find(d => d.id === formData.district)?.name || '';
+      
+      // Format location string
+      const location = `${district}, ${city}, ${province}`;
+      
+      // Prepare listing data
+      const listingData = {
+        title: formData.title,
+        description: formData.description,
+        price: formData.price,
+        location: location,
+        property_type: formData.propertyType,
+        status: 'tersedia', // Default status
+        square_meters: formData.buildingSize,
+        bedrooms: formData.bedrooms || null,
+        bathrooms: formData.bathrooms || null,
+        features: formData.features,
+        address: formData.address,
+        land_size: formData.landSize || null,
+        user_id: user.id
+      };
+
+      let listingId = id;
+      
+      if (isEdit) {
+        // Update existing listing
+        const { error } = await supabase
+          .from('listings')
+          .update(listingData)
+          .eq('id', id);
+
+        if (error) throw error;
+      } else {
+        // Insert new listing
+        const { data, error } = await supabase
+          .from('listings')
+          .insert(listingData)
+          .select('id')
+          .single();
+
+        if (error) throw error;
+        listingId = data.id;
+      }
+
+      // Handle images
+      if (listingId) {
+        // If editing, first delete existing images
+        if (isEdit) {
+          await supabase
+            .from('property_media')
+            .delete()
+            .eq('listing_id', listingId);
+        }
+        
+        // Insert new images
+        const mediaInserts = formData.images.map((url, index) => ({
+          listing_id: listingId,
+          media_url: url,
+          media_type: 'photo',
+          is_primary: index === 0 // First image is primary
+        }));
+        
+        if (mediaInserts.length > 0) {
+          const { error: mediaError } = await supabase
+            .from('property_media')
+            .insert(mediaInserts);
+            
+          if (mediaError) throw mediaError;
+        }
+      }
+
+      showSuccess(
+        isEdit ? 'Listing Updated' : 'Listing Created',
+        isEdit ? 'Your property listing has been updated successfully.' : 'Your property listing has been created successfully.'
+      );
       
       if (formData.makePremium) {
         // Redirect to premium upgrade
-        navigate(`/premium/upgrade?propertyId=${id || 'new'}`);
+        navigate(`/premium/upgrade?propertyId=${listingId}`);
       } else {
         // Redirect to listings
         navigate('/dashboard/listings');
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to save listing:', error);
+      showError('Error', error.message || 'Failed to save listing. Please try again.');
     } finally {
       setIsLoading(false);
     }
@@ -240,18 +379,14 @@ const AddEditListing: React.FC = () => {
               </label>
               <select
                 className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50"
-                value={formData.type}
-                onChange={(e) => handleInputChange('type', e.target.value)}
+                value={formData.propertyType}
+                onChange={(e) => handleInputChange('propertyType', e.target.value)}
                 required
               >
                 <option value="rumah">Rumah</option>
                 <option value="apartemen">Apartemen</option>
-                <option value="kondominium">Kondominium</option>
                 <option value="ruko">Ruko</option>
-                <option value="gedung-komersial">Gedung Komersial</option>
-                <option value="ruang-industri">Ruang Industri</option>
                 <option value="tanah">Tanah</option>
-                <option value="lainnya">Lainnya</option>
               </select>
             </div>
 
@@ -281,7 +416,11 @@ const AddEditListing: React.FC = () => {
                 onChange={(e) => handleInputChange('description', e.target.value)}
                 placeholder="Deskripsikan properti Anda secara detail..."
                 required
+                minLength={50}
               />
+              <p className="text-xs text-neutral-500 mt-1">
+                Minimal 50 karakter
+              </p>
             </div>
           </div>
         </div>
@@ -302,10 +441,11 @@ const AddEditListing: React.FC = () => {
                 type="number"
                 step="0.1"
                 className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50"
-                value={formData.price}
+                value={formData.price || ''}
                 onChange={(e) => handleInputChange('price', e.target.value)}
                 placeholder="2.5"
                 required
+                min="0"
               />
             </div>
 
@@ -338,9 +478,10 @@ const AddEditListing: React.FC = () => {
               <input
                 type="number"
                 className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50"
-                value={formData.bedrooms}
+                value={formData.bedrooms || ''}
                 onChange={(e) => handleInputChange('bedrooms', e.target.value)}
                 placeholder="3"
+                min="0"
               />
             </div>
 
@@ -351,22 +492,25 @@ const AddEditListing: React.FC = () => {
               <input
                 type="number"
                 className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50"
-                value={formData.bathrooms}
+                value={formData.bathrooms || ''}
                 onChange={(e) => handleInputChange('bathrooms', e.target.value)}
                 placeholder="2"
+                min="0"
               />
             </div>
 
             <div>
               <label className="block text-sm font-medium text-neutral-700 mb-1">
-                Luas Bangunan (m²)
+                Luas Bangunan (m²) *
               </label>
               <input
                 type="number"
                 className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50"
-                value={formData.buildingSize}
+                value={formData.buildingSize || ''}
                 onChange={(e) => handleInputChange('buildingSize', e.target.value)}
                 placeholder="150"
+                required
+                min="1"
               />
             </div>
 
@@ -377,9 +521,10 @@ const AddEditListing: React.FC = () => {
               <input
                 type="number"
                 className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50"
-                value={formData.landSize}
+                value={formData.landSize || ''}
                 onChange={(e) => handleInputChange('landSize', e.target.value)}
                 placeholder="200"
+                min="0"
               />
             </div>
           </div>
@@ -458,6 +603,7 @@ const AddEditListing: React.FC = () => {
               onChange={(e) => handleInputChange('address', e.target.value)}
               placeholder="Jl. Contoh No. 123, RT/RW 01/02"
               required
+              minLength={5}
             />
           </div>
         </div>
