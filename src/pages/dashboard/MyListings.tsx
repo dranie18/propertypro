@@ -16,6 +16,9 @@ import {
 } from 'lucide-react';
 import { Helmet } from 'react-helmet-async';
 import { formatPrice } from '../../utils/formatter';
+import { supabase } from '../../lib/supabase';
+import { useAuth } from '../../contexts/AuthContext';
+import { useToast } from '../../contexts/ToastContext';
 
 interface UserListing {
   id: string;
@@ -37,6 +40,8 @@ interface UserListing {
 }
 
 const MyListings: React.FC = () => {
+  const { user } = useAuth();
+  const { showSuccess, showError } = useToast();
   const [listings, setListings] = useState<UserListing[]>([]);
   const [filteredListings, setFilteredListings] = useState<UserListing[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -45,74 +50,14 @@ const MyListings: React.FC = () => {
   const [typeFilter, setTypeFilter] = useState<string>('all');
   const [sortBy, setSortBy] = useState<string>('newest');
   const [showFilters, setShowFilters] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [propertyToDelete, setPropertyToDelete] = useState<string | null>(null);
 
   useEffect(() => {
-    // Simulate loading user listings
-    setTimeout(() => {
-      const mockListings: UserListing[] = [
-        {
-          id: '1',
-          title: 'Rumah Minimalis 2 Lantai di Bintaro',
-          type: 'rumah',
-          purpose: 'jual',
-          price: 2.5,
-          priceUnit: 'miliar',
-          status: 'active',
-          isPremium: true,
-          premiumExpiresAt: '2024-02-15T00:00:00Z',
-          views: 245,
-          createdAt: '2024-01-15T10:30:00Z',
-          image: 'https://images.pexels.com/photos/106399/pexels-photo-106399.jpeg',
-          location: { city: 'Tangerang Selatan', province: 'Banten' }
-        },
-        {
-          id: '2',
-          title: 'Apartemen Studio di Jakarta Pusat',
-          type: 'apartemen',
-          purpose: 'sewa',
-          price: 8,
-          priceUnit: 'juta',
-          status: 'active',
-          isPremium: false,
-          views: 89,
-          createdAt: '2024-01-10T14:20:00Z',
-          image: 'https://images.pexels.com/photos/1643383/pexels-photo-1643383.jpeg',
-          location: { city: 'Jakarta Pusat', province: 'DKI Jakarta' }
-        },
-        {
-          id: '3',
-          title: 'Ruko 3 Lantai Strategis',
-          type: 'ruko',
-          purpose: 'jual',
-          price: 4.7,
-          priceUnit: 'miliar',
-          status: 'expired',
-          isPremium: false,
-          views: 156,
-          createdAt: '2023-12-20T09:15:00Z',
-          image: 'https://images.pexels.com/photos/342800/pexels-photo-342800.jpeg',
-          location: { city: 'Jakarta Utara', province: 'DKI Jakarta' }
-        },
-        {
-          id: '4',
-          title: 'Tanah Kavling Siap Bangun',
-          type: 'tanah',
-          purpose: 'jual',
-          price: 1.2,
-          priceUnit: 'miliar',
-          status: 'pending',
-          isPremium: false,
-          views: 23,
-          createdAt: '2024-01-12T16:45:00Z',
-          image: 'https://images.pexels.com/photos/269790/pexels-photo-269790.jpeg',
-          location: { city: 'Bogor', province: 'Jawa Barat' }
-        }
-      ];
-      setListings(mockListings);
-      setFilteredListings(mockListings);
-      setIsLoading(false);
-    }, 1000);
-  }, []);
+    if (user) {
+      fetchUserListings();
+    }
+  }, [user]);
 
   useEffect(() => {
     let filtered = listings;
@@ -154,6 +99,124 @@ const MyListings: React.FC = () => {
     setFilteredListings(filtered);
   }, [listings, searchTerm, statusFilter, typeFilter, sortBy]);
 
+  const fetchUserListings = async () => {
+    if (!user) return;
+    
+    setIsLoading(true);
+    try {
+      // Fetch listings from Supabase
+      const { data: listingsData, error: listingsError } = await supabase
+        .from('listings')
+        .select('*')
+        .eq('user_id', user.id);
+
+      if (listingsError) throw listingsError;
+
+      // Process listings data
+      const processedListings: UserListing[] = [];
+      
+      for (const listing of listingsData || []) {
+        // Get the primary image for each listing
+        const { data: mediaData } = await supabase
+          .from('property_media')
+          .select('media_url')
+          .eq('listing_id', listing.id)
+          .eq('is_primary', true)
+          .single();
+          
+        // Get location parts
+        const locationParts = listing.location.split(', ');
+        const district = locationParts[0] || '';
+        const city = locationParts[1] || '';
+        const province = locationParts[2] || '';
+        
+        // Determine price unit based on price value
+        const priceValue = parseFloat(listing.price);
+        const priceUnit = priceValue >= 1000 ? 'miliar' : 'juta';
+        const normalizedPrice = priceUnit === 'miliar' ? priceValue / 1000 : priceValue;
+        
+        // Map status
+        let status: 'active' | 'inactive' | 'expired' | 'pending';
+        switch (listing.status) {
+          case 'tersedia':
+            status = 'active';
+            break;
+          case 'terjual':
+          case 'disewa':
+            status = 'inactive';
+            break;
+          default:
+            status = 'pending';
+        }
+        
+        // Check if listing has premium features (this would be implemented with a real premium service)
+        const isPremium = false; // Replace with actual premium check
+        
+        processedListings.push({
+          id: listing.id,
+          title: listing.title,
+          type: listing.property_type,
+          purpose: listing.status === 'tersedia' ? 'jual' : 'sewa',
+          price: normalizedPrice,
+          priceUnit: priceUnit,
+          status: status,
+          isPremium: isPremium,
+          views: 0, // This would come from analytics in a real implementation
+          createdAt: listing.created_at,
+          image: mediaData?.media_url || 'https://images.pexels.com/photos/106399/pexels-photo-106399.jpeg',
+          location: {
+            city: city,
+            province: province
+          }
+        });
+      }
+      
+      setListings(processedListings);
+    } catch (error) {
+      console.error('Error fetching listings:', error);
+      showError('Error', 'Failed to load your listings. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleDeleteListing = async (listingId: string) => {
+    if (confirm('Apakah Anda yakin ingin menghapus iklan ini?')) {
+      setIsLoading(true);
+      try {
+        // First delete associated media
+        const { error: mediaError } = await supabase
+          .from('property_media')
+          .delete()
+          .eq('listing_id', listingId);
+          
+        if (mediaError) throw mediaError;
+        
+        // Then delete the listing
+        const { error } = await supabase
+          .from('listings')
+          .delete()
+          .eq('id', listingId);
+          
+        if (error) throw error;
+        
+        // Update local state
+        setListings(prev => prev.filter(listing => listing.id !== listingId));
+        showSuccess('Listing Deleted', 'Your property listing has been deleted successfully.');
+      } catch (error: any) {
+        console.error('Error deleting listing:', error);
+        showError('Error', error.message || 'Failed to delete listing. Please try again.');
+      } finally {
+        setIsLoading(false);
+      }
+    }
+  };
+
+  const handleUpgradeToPremium = (listingId: string) => {
+    // Navigate to premium upgrade page
+    window.location.href = `/premium/upgrade?propertyId=${listingId}`;
+  };
+
   const getStatusBadge = (status: string) => {
     const statusConfig = {
       active: { label: 'Aktif', className: 'bg-green-100 text-green-800', icon: CheckCircle },
@@ -173,18 +236,23 @@ const MyListings: React.FC = () => {
     );
   };
 
-  const handleDeleteListing = (listingId: string) => {
-    if (confirm('Apakah Anda yakin ingin menghapus iklan ini?')) {
-      setListings(prev => prev.filter(listing => listing.id !== listingId));
+  const confirmDeleteProperty = (listingId: string) => {
+    setPropertyToDelete(listingId);
+    setShowDeleteModal(true);
+  };
+
+  const deleteProperty = async () => {
+    if (!propertyToDelete) return;
+    
+    try {
+      await handleDeleteListing(propertyToDelete);
+    } finally {
+      setShowDeleteModal(false);
+      setPropertyToDelete(null);
     }
   };
 
-  const handleUpgradeToPremium = (listingId: string) => {
-    // Navigate to premium upgrade page
-    window.location.href = `/premium/upgrade?propertyId=${listingId}`;
-  };
-
-  if (isLoading) {
+  if (isLoading && listings.length === 0) {
     return (
       <div className="flex items-center justify-center py-12">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
@@ -362,7 +430,7 @@ const MyListings: React.FC = () => {
                       <Edit size={16} />
                     </Link>
                     <button
-                      onClick={() => handleDeleteListing(listing.id)}
+                      onClick={() => confirmDeleteProperty(listing.id)}
                       className="p-2 text-neutral-500 hover:text-red-600 hover:bg-red-50 rounded"
                       title="Hapus"
                     >
@@ -384,7 +452,7 @@ const MyListings: React.FC = () => {
           ))}
         </div>
       ) : (
-        <div className="bg-white rounded-lg shadow-sm p-8 text-center">
+        <div className="bg-white rounded-lg shadow-md p-8 text-center">
           <div className="w-16 h-16 bg-neutral-100 rounded-full flex items-center justify-center mx-auto mb-4">
             <Plus size={32} className="text-neutral-400" />
           </div>
@@ -403,6 +471,34 @@ const MyListings: React.FC = () => {
           <Link to="/dashboard/listings/new" className="btn-primary">
             Tambah Iklan Pertama
           </Link>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg max-w-md w-full p-6">
+            <h3 className="text-lg font-semibold text-neutral-900 mb-4">Confirm Deletion</h3>
+            <p className="text-neutral-600 mb-6">
+              Are you sure you want to delete this property? This action cannot be undone.
+            </p>
+            <div className="flex justify-end space-x-3">
+              <button
+                onClick={() => setShowDeleteModal(false)}
+                className="px-4 py-2 border border-neutral-300 rounded-lg text-neutral-700 hover:bg-neutral-50"
+                disabled={isLoading}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={deleteProperty}
+                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
+                disabled={isLoading}
+              >
+                {isLoading ? 'Deleting...' : 'Delete'}
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>
