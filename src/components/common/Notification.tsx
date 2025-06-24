@@ -95,7 +95,7 @@ const Notification: React.FC<NotificationProps> = ({
   };
   
   return (
-    <div className="fixed top-4 right-4 z-50 max-w-md w-full shadow-lg rounded-lg overflow-hidden animate-fade-in">
+    <div className="fixed top-4 right-4 z-50 max-w-md w-full shadow-lg rounded-lg overflow-hidden animate-fade-in" role="alert" aria-live="assertive">
       <div className="flex">
         {/* Icon Section */}
         <div className={`${getBackgroundColor()} p-4 flex items-center justify-center`}>
@@ -113,6 +113,7 @@ const Notification: React.FC<NotificationProps> = ({
           <button 
             onClick={handleClose}
             className={`absolute top-2 right-2 p-1 rounded-full hover:bg-black hover:bg-opacity-10 ${getTextColor()}`}
+            aria-label="Close notification"
           >
             <X size={16} />
           </button>

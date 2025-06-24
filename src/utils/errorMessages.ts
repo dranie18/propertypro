@@ -128,5 +128,8 @@ export const parseSupabaseError = (error: any): { title: string; message: string
   }
   
   // Default to generic error
-  return errorMessages.generic.unknownError;
+  return {
+    title: 'Error',
+    message: errorMessage || 'An unexpected error occurred. Please try again.'
+  };
 };
