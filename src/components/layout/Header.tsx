@@ -48,6 +48,9 @@ const Header: React.FC = () => {
             <Link to="/agen" className="font-medium hover:text-primary transition-colors">
               Agen
             </Link>
+            <Link to="/premium/features" className="font-medium hover:text-primary transition-colors">
+              Premium
+            </Link>
           </nav>
 
           {/* Desktop Auth Buttons */}
@@ -74,16 +77,22 @@ const Header: React.FC = () => {
                   {/* Dropdown Menu */}
                   <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-neutral-200 py-1 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200">
                     <Link 
-                      to="/profil" 
+                      to="/user/profile" 
                       className="block px-4 py-2 text-sm text-neutral-700 hover:bg-neutral-50"
                     >
                       Profil Saya
                     </Link>
                     <Link 
-                      to="/properti-saya" 
+                      to="/user/properties" 
                       className="block px-4 py-2 text-sm text-neutral-700 hover:bg-neutral-50"
                     >
                       Properti Saya
+                    </Link>
+                    <Link 
+                      to="/user/dashboard" 
+                      className="block px-4 py-2 text-sm text-neutral-700 hover:bg-neutral-50"
+                    >
+                      Dashboard
                     </Link>
                     {user?.role === 'admin' || user?.role === 'superadmin' ? (
                       <Link 
@@ -139,6 +148,9 @@ const Header: React.FC = () => {
             <Link to="/agen" className="flex items-center space-x-2 py-2" onClick={toggleMenu}>
               <span>Agen</span>
             </Link>
+            <Link to="/premium/features" className="flex items-center space-x-2 py-2" onClick={toggleMenu}>
+              <span>Premium</span>
+            </Link>
             
             <hr className="border-neutral-200" />
             
@@ -148,9 +160,15 @@ const Header: React.FC = () => {
                   <Heart size={20} />
                   <span>Favorit</span>
                 </Link>
-                <Link to="/profil" className="flex items-center space-x-2 py-2" onClick={toggleMenu}>
+                <Link to="/user/profile" className="flex items-center space-x-2 py-2" onClick={toggleMenu}>
                   <User size={20} />
                   <span>Profil ({user?.full_name})</span>
+                </Link>
+                <Link to="/user/dashboard" className="flex items-center space-x-2 py-2" onClick={toggleMenu}>
+                  <span>Dashboard</span>
+                </Link>
+                <Link to="/user/properties" className="flex items-center space-x-2 py-2" onClick={toggleMenu}>
+                  <span>Properti Saya</span>
                 </Link>
                 {user?.role === 'admin' || user?.role === 'superadmin' ? (
                   <Link to="/admin/dashboard" className="flex items-center space-x-2 py-2" onClick={toggleMenu}>
