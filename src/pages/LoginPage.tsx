@@ -14,7 +14,7 @@ const LoginPage: React.FC = () => {
   const [rememberMe, setRememberMe] = useState(false);
   
   const { signIn, isAuthenticated, loading, error, clearError } = useAuth();
-  const { showError } = useNotification();
+  const { showError, showSuccess } = useNotification();
   const navigate = useNavigate();
   const location = useLocation();
   
@@ -53,10 +53,21 @@ const LoginPage: React.FC = () => {
     
     try {
       await signIn(email, password);
+      showSuccess('Login Successful', 'Welcome back! You have been successfully logged in.');
       // Navigation will be handled by the useEffect above
     } catch (error) {
       // Error is handled by the context and notification system
       console.error('Login failed:', error);
+    }
+  };
+
+  const fillDemoCredentials = (type: 'admin' | 'superadmin') => {
+    if (type === 'admin') {
+      setEmail('admin@propertipro.id');
+      setPassword('admin123');
+    } else {
+      setEmail('superadmin@propertipro.id');
+      setPassword('admin123');
     }
   };
   
@@ -159,10 +170,24 @@ const LoginPage: React.FC = () => {
               {/* Demo credentials for testing */}
               <div className="mt-6 pt-6 border-t border-neutral-200">
                 <div className="bg-neutral-50 p-3 rounded-lg">
-                  <p className="text-xs text-neutral-600 mb-2">Demo Credentials:</p>
-                  <div className="text-xs text-neutral-700 space-y-1">
-                    <p><strong>Admin:</strong> admin@propertipro.id / admin123</p>
-                    <p><strong>Super Admin:</strong> superadmin@propertipro.id / admin123</p>
+                  <p className="text-xs text-neutral-600 mb-3">Demo Credentials (Click to fill):</p>
+                  <div className="space-y-2">
+                    <button
+                      type="button"
+                      onClick={() => fillDemoCredentials('admin')}
+                      className="w-full text-left text-xs bg-white border border-neutral-200 rounded px-2 py-1 hover:bg-neutral-50 transition-colors"
+                      disabled={loading}
+                    >
+                      <strong>Admin:</strong> admin@propertipro.id / admin123
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => fillDemoCredentials('superadmin')}
+                      className="w-full text-left text-xs bg-white border border-neutral-200 rounded px-2 py-1 hover:bg-neutral-50 transition-colors"
+                      disabled={loading}
+                    >
+                      <strong>Super Admin:</strong> superadmin@propertipro.id / admin123
+                    </button>
                   </div>
                 </div>
               </div>
