@@ -1,184 +1,201 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
+import Layout from '../components/layout/Layout';
+import { Eye, EyeOff } from 'lucide-react';
 import { Helmet } from 'react-helmet-async';
-import { Eye, EyeOff, Mail, Lock } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNotification } from '../contexts/NotificationContext';
+import { parseSupabaseError } from '../utils/errorMessages';
 
 const LoginPage: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [rememberMe, setRememberMe] = useState(false);
   
-  const { signIn, isAuthenticated, error, clearError } = useAuth();
+  const { signIn, isAuthenticated, loading, error, clearError } = useAuth();
   const { showError, showSuccess } = useNotification();
   const navigate = useNavigate();
   const location = useLocation();
   
-  // Get the redirect path from location state or default to home
-  const from = (location.state as any)?.from?.pathname || '/';
+  const from = location.state?.from?.pathname || '/';
 
   useEffect(() => {
-    // Clear any previous auth errors
-    clearError();
-  }, [clearError]);
-
-  useEffect(() => {
-    // If user is already authenticated, redirect
     if (isAuthenticated) {
       navigate(from, { replace: true });
     }
   }, [isAuthenticated, navigate, from]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  useEffect(() => {
+    clearError();
+  }, [clearError]);
+
+  useEffect(() => {
+    if (error) {
+      const { title, message } = parseSupabaseError(error);
+      showError(title, message);
+    }
+  }, [error, showError]);
+
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     
     // Basic validation
     if (!email.trim()) {
-      showError('Validasi Gagal', 'Email wajib diisi');
+      showError('Email Required', 'Please enter your email address to continue.');
       return;
     }
     
     if (!password) {
-      showError('Validasi Gagal', 'Password wajib diisi');
+      showError('Password Required', 'Please enter your password to continue.');
       return;
     }
     
-    setIsSubmitting(true);
-    
     try {
       await signIn(email, password);
-      showSuccess('Login Berhasil', 'Selamat datang kembali!');
-      // Navigation will happen in the useEffect
-    } catch (error: any) {
-      // Error is already handled by the auth context
-      console.error('Login error:', error);
-    } finally {
-      setIsSubmitting(false);
+      showSuccess('Login Successful', 'Welcome back! You have been successfully logged in.');
+      // Navigation will be handled by the useEffect above
+    } catch (error) {
+      // Error is handled by the context and notification system
+      console.error('Login failed:', error);
     }
   };
 
+  const fillDemoCredentials = (type: 'admin' | 'superadmin') => {
+    if (type === 'admin') {
+      setEmail('admin@propertipro.id');
+      setPassword('admin123');
+    } else {
+      setEmail('superadmin@propertipro.id');
+      setPassword('admin123');
+    }
+  };
+  
   return (
-    <div className="min-h-screen bg-neutral-50 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+    <Layout>
       <Helmet>
-        <title>Masuk | Real Estate Management</title>
-        <meta name="description" content="Masuk ke akun Anda untuk mengelola properti" />
+        <title>Masuk | Properti Pro</title>
+        <meta name="description" content="Masuk ke akun Properti Pro Anda untuk mengakses fitur-fitur eksklusif." />
+        <meta name="robots" content="noindex, nofollow" />
       </Helmet>
       
-      <div className="max-w-md w-full bg-white rounded-lg shadow-md p-8">
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-neutral-900 mb-2">Masuk</h1>
-          <p className="text-neutral-600">
-            Masuk ke akun Anda untuk mengelola properti
-          </p>
-        </div>
-        
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <div>
-            <label htmlFor="email" className="block text-sm font-medium text-neutral-700 mb-1">
-              Email
-            </label>
-            <div className="relative">
-              <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-neutral-500 h-5 w-5" />
-              <input
-                id="email"
-                name="email"
-                type="email"
-                autoComplete="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="w-full pl-10 pr-3 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50"
-                placeholder="Masukkan email Anda"
-                disabled={isSubmitting}
-              />
+      <div className="bg-neutral-100 py-12">
+        <div className="container mx-auto px-4">
+          <div className="max-w-md mx-auto bg-white rounded-lg shadow-md overflow-hidden">
+            <div className="p-6">
+              <h1 className="font-heading font-bold text-2xl text-accent mb-6 text-center">
+                Masuk ke <span className="text-primary">Properti Pro</span>
+              </h1>
+              
+              <form onSubmit={handleLogin}>
+                <div className="mb-4">
+                  <label htmlFor="email" className="block text-sm font-medium text-neutral-700 mb-1">
+                    Email
+                  </label>
+                  <input
+                    type="email"
+                    id="email"
+                    className="w-full px-4 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50"
+                    placeholder="Masukkan email Anda"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                    disabled={loading}
+                  />
+                </div>
+                
+                <div className="mb-4">
+                  <label htmlFor="password" className="block text-sm font-medium text-neutral-700 mb-1">
+                    Password
+                  </label>
+                  <div className="relative">
+                    <input
+                      type={showPassword ? 'text' : 'password'}
+                      id="password"
+                      className="w-full px-4 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50"
+                      placeholder="Masukkan password Anda"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      required
+                      disabled={loading}
+                    />
+                    <button
+                      type="button"
+                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-neutral-500"
+                      onClick={() => setShowPassword(!showPassword)}
+                      tabIndex={-1}
+                    >
+                      {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                    </button>
+                  </div>
+                </div>
+                
+                <div className="flex items-center justify-between mb-6">
+                  <div className="flex items-center">
+                    <input
+                      type="checkbox"
+                      id="remember"
+                      className="h-4 w-4 text-primary border-neutral-300 rounded focus:ring-primary"
+                      checked={rememberMe}
+                      onChange={(e) => setRememberMe(e.target.checked)}
+                      disabled={loading}
+                    />
+                    <label htmlFor="remember" className="ml-2 block text-sm text-neutral-700">
+                      Ingat saya
+                    </label>
+                  </div>
+                  <Link to="/forgot-password" className="text-sm text-primary hover:underline">
+                    Lupa password?
+                  </Link>
+                </div>
+                
+                <button
+                  type="submit"
+                  className="w-full btn-primary py-2.5 disabled:opacity-50 disabled:cursor-not-allowed"
+                  disabled={loading}
+                >
+                  {loading ? 'Memproses...' : 'Masuk'}
+                </button>
+              </form>
+              
+              <div className="mt-6 text-center">
+                <p className="text-neutral-600">
+                  Belum punya akun?{' '}
+                  <Link to="/register" className="text-primary font-medium hover:underline">
+                    Daftar sekarang
+                  </Link>
+                </p>
+              </div>
+
+              {/* Demo credentials for testing */}
+              <div className="mt-6 pt-6 border-t border-neutral-200">
+                <div className="bg-neutral-50 p-3 rounded-lg">
+                  <p className="text-xs text-neutral-600 mb-3">Demo Credentials (Click to fill):</p>
+                  <div className="space-y-2">
+                    <button
+                      type="button"
+                      onClick={() => fillDemoCredentials('admin')}
+                      className="w-full text-left text-xs bg-white border border-neutral-200 rounded px-2 py-1 hover:bg-neutral-50 transition-colors"
+                      disabled={loading}
+                    >
+                      <strong>Admin:</strong> admin@propertipro.id / admin123
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => fillDemoCredentials('superadmin')}
+                      className="w-full text-left text-xs bg-white border border-neutral-200 rounded px-2 py-1 hover:bg-neutral-50 transition-colors"
+                      disabled={loading}
+                    >
+                      <strong>Super Admin:</strong> superadmin@propertipro.id / admin123
+                    </button>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
-
-          <div>
-            <label htmlFor="password" className="block text-sm font-medium text-neutral-700 mb-1">
-              Password
-            </label>
-            <div className="relative">
-              <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-neutral-500 h-5 w-5" />
-              <input
-                id="password"
-                name="password"
-                type={showPassword ? 'text' : 'password'}
-                autoComplete="current-password"
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full pl-10 pr-10 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50"
-                placeholder="Masukkan password Anda"
-                disabled={isSubmitting}
-              />
-              <button
-                type="button"
-                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-neutral-500"
-                onClick={() => setShowPassword(!showPassword)}
-              >
-                {showPassword ? (
-                  <EyeOff className="h-5 w-5" />
-                ) : (
-                  <Eye className="h-5 w-5" />
-                )}
-              </button>
-            </div>
-          </div>
-
-          <div className="flex items-center justify-between">
-            <div className="flex items-center">
-              <input
-                id="remember-me"
-                name="remember-me"
-                type="checkbox"
-                className="h-4 w-4 text-primary border-neutral-300 rounded focus:ring-primary"
-              />
-              <label htmlFor="remember-me" className="ml-2 block text-sm text-neutral-700">
-                Ingat saya
-              </label>
-            </div>
-
-            <div className="text-sm">
-              <Link to="/forgot-password" className="text-primary hover:text-primary/80">
-                Lupa password?
-              </Link>
-            </div>
-          </div>
-
-          <div>
-            <button
-              type="submit"
-              disabled={isSubmitting}
-              className="w-full flex justify-center py-2 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-primary hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {isSubmitting ? (
-                <>
-                  <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
-                  Memproses...
-                </>
-              ) : (
-                'Masuk'
-              )}
-            </button>
-          </div>
-        </form>
-
-        <div className="mt-6 text-center">
-          <p className="text-sm text-neutral-600">
-            Belum punya akun?{' '}
-            <Link to="/register" className="text-primary hover:text-primary/80 font-medium">
-              Daftar sekarang
-            </Link>
-          </p>
         </div>
       </div>
-    </div>
+    </Layout>
   );
 };
 
