@@ -4,8 +4,8 @@ import Layout from '../components/layout/Layout';
 import { Eye, EyeOff, Lock } from 'lucide-react';
 import { Helmet } from 'react-helmet-async';
 import { useAuth } from '../contexts/AuthContext';
-import { useNotification } from '../contexts/NotificationContext';
-import { parseSupabaseError, errorMessages } from '../utils/errorMessages';
+import { useToast } from '../contexts/ToastContext';
+import { authMessages } from '../utils/authMessages';
 
 const ResetPasswordPage: React.FC = () => {
   const [searchParams] = useSearchParams();
@@ -18,7 +18,7 @@ const ResetPasswordPage: React.FC = () => {
   const [isSuccess, setIsSuccess] = useState(false);
   
   const { updatePassword, loading, error, clearError, session } = useAuth();
-  const { showError, showSuccess, showWarning } = useNotification();
+  const { showError, showSuccess, showWarning } = useToast();
 
   useEffect(() => {
     clearError();
@@ -26,16 +26,15 @@ const ResetPasswordPage: React.FC = () => {
 
   useEffect(() => {
     if (error) {
-      const { title, message } = parseSupabaseError(error);
-      showError(title, message);
+      showError('Password Reset Failed', error);
     }
   }, [error, showError]);
 
   useEffect(() => {
     if (!session) {
       showWarning(
-        'Invalid or Expired Link',
-        'This password reset link is invalid or has expired. Please request a new link.'
+        authMessages.passwordReset.invalidToken.title,
+        authMessages.passwordReset.invalidToken.message
       );
     }
   }, [session, showWarning]);
@@ -43,8 +42,8 @@ const ResetPasswordPage: React.FC = () => {
   const validatePassword = (password: string): boolean => {
     if (password.length < 8) {
       showError(
-        errorMessages.validation.passwordTooShort.title,
-        errorMessages.validation.passwordTooShort.message
+        authMessages.register.passwordTooShort.title,
+        authMessages.register.passwordTooShort.message
       );
       return false;
     }
@@ -63,8 +62,8 @@ const ResetPasswordPage: React.FC = () => {
 
     if (password !== confirmPassword) {
       showError(
-        errorMessages.validation.passwordMismatch.title,
-        errorMessages.validation.passwordMismatch.message
+        authMessages.register.passwordMismatch.title,
+        authMessages.register.passwordMismatch.message
       );
       return;
     }
@@ -73,17 +72,16 @@ const ResetPasswordPage: React.FC = () => {
       await updatePassword(password);
       setIsSuccess(true);
       showSuccess(
-        'Password Reset Successful',
-        'Your password has been reset successfully. You can now log in with your new password.'
+        authMessages.passwordReset.resetSuccess.title,
+        authMessages.passwordReset.resetSuccess.message
       );
       
       // Redirect to login after 3 seconds
       setTimeout(() => {
         navigate('/login');
       }, 3000);
-    } catch (error) {
-      // Error is handled by context and notification system
-      console.error('Password update failed:', error);
+    } catch (error: any) {
+      showError('Password Reset Failed', error.message || 'An error occurred while resetting your password.');
     }
   };
 

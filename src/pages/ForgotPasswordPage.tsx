@@ -4,8 +4,8 @@ import Layout from '../components/layout/Layout';
 import { Mail, ArrowLeft, CheckCircle } from 'lucide-react';
 import { Helmet } from 'react-helmet-async';
 import { useAuth } from '../contexts/AuthContext';
-import { useNotification } from '../contexts/NotificationContext';
-import { parseSupabaseError } from '../utils/errorMessages';
+import { useToast } from '../contexts/ToastContext';
+import { authMessages } from '../utils/authMessages';
 
 const ForgotPasswordPage: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -13,7 +13,7 @@ const ForgotPasswordPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   
   const { resetPassword, clearError } = useAuth();
-  const { showError, showSuccess, showInfo } = useNotification();
+  const { showError, showSuccess, showInfo } = useToast();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -24,8 +24,8 @@ const ForgotPasswordPage: React.FC = () => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
       showError(
-        'Invalid Email',
-        'Please enter a valid email address to receive the password reset link.'
+        authMessages.register.invalidEmail.title,
+        authMessages.register.invalidEmail.message
       );
       setIsLoading(false);
       return;
@@ -35,12 +35,18 @@ const ForgotPasswordPage: React.FC = () => {
       await resetPassword(email);
       setIsSubmitted(true);
       showSuccess(
-        'Reset Link Sent',
-        'We\'ve sent a password reset link to your email address. Please check your inbox.'
+        authMessages.passwordReset.emailSent.title,
+        authMessages.passwordReset.emailSent.message
       );
     } catch (error: any) {
-      const { title, message } = parseSupabaseError(error);
-      showError(title, message);
+      if (error.message.includes('user not found')) {
+        showError(
+          authMessages.passwordReset.emailNotFound.title,
+          authMessages.passwordReset.emailNotFound.message
+        );
+      } else {
+        showError('Reset Failed', error.message || 'Failed to send reset link. Please try again.');
+      }
     } finally {
       setIsLoading(false);
     }
@@ -55,8 +61,10 @@ const ForgotPasswordPage: React.FC = () => {
         'We\'ve sent another password reset link to your email address.'
       );
     } catch (error: any) {
-      const { title, message } = parseSupabaseError(error);
-      showError(title, message);
+      showError(
+        'Failed to Resend',
+        error.message || 'Failed to resend reset link. Please try again.'
+      );
     } finally {
       setIsLoading(false);
     }

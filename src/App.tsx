@@ -2,7 +2,7 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { HelmetProvider } from 'react-helmet-async';
 import { AuthProvider } from './contexts/AuthContext';
-import { NotificationProvider } from './contexts/NotificationContext';
+import { ToastProvider } from './contexts/ToastContext';
 import HomePage from './pages/HomePage';
 import PropertyListingPage from './pages/PropertyListingPage';
 import PropertyDetailPage from './pages/PropertyDetailPage';
@@ -49,7 +49,7 @@ function App() {
   return (
     <HelmetProvider>
       <AuthProvider>
-        <NotificationProvider>
+        <ToastProvider>
           <Router>
             <Routes>
               {/* Public Routes */}
@@ -113,7 +113,7 @@ function App() {
               </Route>
             </Routes>
           </Router>
-        </NotificationProvider>
+        </ToastProvider>
       </AuthProvider>
     </HelmetProvider>
   );

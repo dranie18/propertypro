@@ -13,16 +13,16 @@ import {
 } from 'lucide-react';
 import { Helmet } from 'react-helmet-async';
 import { useAuth } from '../../contexts/AuthContext';
+import { useToast } from '../../contexts/ToastContext';
 
 const ProfileSettings: React.FC = () => {
   const { user, updateProfile } = useAuth();
+  const { showSuccess, showError } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [showPasswordForm, setShowPasswordForm] = useState(false);
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [successMessage, setSuccessMessage] = useState('');
-  const [errorMessage, setErrorMessage] = useState('');
 
   const [profileData, setProfileData] = useState({
     full_name: user?.full_name || '',
@@ -53,17 +53,12 @@ const ProfileSettings: React.FC = () => {
   const handleProfileSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    setErrorMessage('');
-    setSuccessMessage('');
 
     try {
       await updateProfile(profileData);
-      setSuccessMessage('Profil berhasil diperbarui');
-      
-      // Clear success message after 3 seconds
-      setTimeout(() => setSuccessMessage(''), 3000);
+      showSuccess('Profile Updated', 'Your profile has been successfully updated.');
     } catch (error: any) {
-      setErrorMessage(error.message || 'Gagal memperbarui profil');
+      showError('Update Failed', error.message || 'Failed to update profile. Please try again.');
     } finally {
       setIsLoading(false);
     }
@@ -73,34 +68,29 @@ const ProfileSettings: React.FC = () => {
     e.preventDefault();
     
     if (passwordData.newPassword !== passwordData.confirmPassword) {
-      setErrorMessage('Password baru dan konfirmasi password tidak cocok');
+      showError('Password Mismatch', 'New password and confirmation do not match.');
       return;
     }
 
     if (passwordData.newPassword.length < 8) {
-      setErrorMessage('Password baru minimal 8 karakter');
+      showError('Password Too Short', 'New password must be at least 8 characters long.');
       return;
     }
 
     setIsLoading(true);
-    setErrorMessage('');
-    setSuccessMessage('');
 
     try {
       // In a real implementation, you would verify current password first
       // then update to new password
-      setSuccessMessage('Password berhasil diperbarui');
+      showSuccess('Password Updated', 'Your password has been successfully updated.');
       setPasswordData({
         currentPassword: '',
         newPassword: '',
         confirmPassword: '',
       });
       setShowPasswordForm(false);
-      
-      // Clear success message after 3 seconds
-      setTimeout(() => setSuccessMessage(''), 3000);
     } catch (error: any) {
-      setErrorMessage(error.message || 'Gagal memperbarui password');
+      showError('Password Update Failed', error.message || 'Failed to update password. Please try again.');
     } finally {
       setIsLoading(false);
     }
@@ -132,21 +122,6 @@ const ProfileSettings: React.FC = () => {
         <h1 className="text-2xl font-bold text-neutral-900 mb-2">Pengaturan Profil</h1>
         <p className="text-neutral-600">Kelola informasi profil dan keamanan akun Anda</p>
       </div>
-
-      {/* Success/Error Messages */}
-      {successMessage && (
-        <div className="bg-green-50 border border-green-200 text-green-700 p-3 rounded-md mb-6 flex items-center">
-          <CheckCircle size={18} className="mr-2" />
-          {successMessage}
-        </div>
-      )}
-
-      {errorMessage && (
-        <div className="bg-red-50 border border-red-200 text-red-700 p-3 rounded-md mb-6 flex items-center">
-          <AlertCircle size={18} className="mr-2" />
-          {errorMessage}
-        </div>
-      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Profile Information */}

@@ -4,8 +4,8 @@ import Layout from '../components/layout/Layout';
 import { Eye, EyeOff } from 'lucide-react';
 import { Helmet } from 'react-helmet-async';
 import { useAuth } from '../contexts/AuthContext';
-import { useNotification } from '../contexts/NotificationContext';
-import { parseSupabaseError, errorMessages } from '../utils/errorMessages';
+import { useToast } from '../contexts/ToastContext';
+import { authMessages } from '../utils/authMessages';
 
 const RegisterPage: React.FC = () => {
   const [formData, setFormData] = useState({
@@ -21,7 +21,7 @@ const RegisterPage: React.FC = () => {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   
   const { signUp, isAuthenticated, loading, error, clearError } = useAuth();
-  const { showError, showSuccess } = useNotification();
+  const { showError, showSuccess } = useToast();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -36,8 +36,16 @@ const RegisterPage: React.FC = () => {
 
   useEffect(() => {
     if (error) {
-      const { title, message } = parseSupabaseError(error);
-      showError(title, message);
+      // Handle specific error messages
+      if (error.includes('already registered')) {
+        showError(
+          authMessages.register.emailExists.title,
+          authMessages.register.emailExists.message
+        );
+      } else {
+        // Generic error
+        showError('Registration Failed', error);
+      }
     }
   }, [error, showError]);
   
@@ -54,30 +62,39 @@ const RegisterPage: React.FC = () => {
   const validateForm = (): boolean => {
     // Check full name
     if (!formData.fullName.trim()) {
-      showError('Name Required', 'Please enter your full name to continue.');
+      showError(
+        'Name Required', 
+        'Please enter your full name to continue.'
+      );
       return false;
     }
 
     // Check email
     if (!formData.email.trim()) {
-      showError('Email Required', 'Please enter your email address to continue.');
+      showError(
+        'Email Required', 
+        'Please enter your email address to continue.'
+      );
       return false;
     } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
       showError(
-        errorMessages.validation.invalidEmail.title,
-        errorMessages.validation.invalidEmail.message
+        authMessages.register.invalidEmail.title,
+        authMessages.register.invalidEmail.message
       );
       return false;
     }
 
     // Check password
     if (!formData.password) {
-      showError('Password Required', 'Please create a password for your account.');
+      showError(
+        'Password Required', 
+        'Please create a password for your account.'
+      );
       return false;
     } else if (formData.password.length < 8) {
       showError(
-        errorMessages.validation.passwordTooShort.title,
-        errorMessages.validation.passwordTooShort.message
+        authMessages.register.passwordTooShort.title,
+        authMessages.register.passwordTooShort.message
       );
       return false;
     }
@@ -85,8 +102,8 @@ const RegisterPage: React.FC = () => {
     // Check password confirmation
     if (formData.password !== formData.confirmPassword) {
       showError(
-        errorMessages.validation.passwordMismatch.title,
-        errorMessages.validation.passwordMismatch.message
+        authMessages.register.passwordMismatch.title,
+        authMessages.register.passwordMismatch.message
       );
       return false;
     }
@@ -118,8 +135,8 @@ const RegisterPage: React.FC = () => {
       });
 
       showSuccess(
-        'Registration Successful',
-        'Your account has been created successfully. You can now log in.'
+        authMessages.register.success.title,
+        authMessages.register.success.message
       );
       
       // Navigate to login page after successful registration
@@ -127,7 +144,7 @@ const RegisterPage: React.FC = () => {
         navigate('/login');
       }, 2000);
     } catch (error) {
-      // Error is handled by the context and notification system
+      // Error is handled by the useEffect above
       console.error('Registration failed:', error);
     }
   };

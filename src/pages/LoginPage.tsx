@@ -4,8 +4,8 @@ import Layout from '../components/layout/Layout';
 import { Eye, EyeOff } from 'lucide-react';
 import { Helmet } from 'react-helmet-async';
 import { useAuth } from '../contexts/AuthContext';
-import { useNotification } from '../contexts/NotificationContext';
-import { parseSupabaseError } from '../utils/errorMessages';
+import { useToast } from '../contexts/ToastContext';
+import { authMessages } from '../utils/authMessages';
 
 const LoginPage: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -14,7 +14,7 @@ const LoginPage: React.FC = () => {
   const [rememberMe, setRememberMe] = useState(false);
   
   const { signIn, isAuthenticated, loading, error, clearError } = useAuth();
-  const { showError, showSuccess } = useNotification();
+  const { showError, showSuccess } = useToast();
   const navigate = useNavigate();
   const location = useLocation();
   
@@ -32,8 +32,41 @@ const LoginPage: React.FC = () => {
 
   useEffect(() => {
     if (error) {
-      const { title, message } = parseSupabaseError(error);
-      showError(title, message);
+      // Handle specific error messages
+      if (error.includes('Invalid login credentials')) {
+        showError(
+          authMessages.login.invalidCredentials.title,
+          authMessages.login.invalidCredentials.message
+        );
+      } else if (error.includes('user not found')) {
+        showError(
+          authMessages.login.userNotFound.title,
+          authMessages.login.userNotFound.message
+        );
+      } else if (error.includes('locked')) {
+        showError(
+          authMessages.login.accountLocked.title,
+          authMessages.login.accountLocked.message
+        );
+      } else if (error.includes('suspended')) {
+        showError(
+          authMessages.login.accountSuspended.title,
+          authMessages.login.accountSuspended.message
+        );
+      } else if (error.includes('too many requests') || error.includes('rate limit')) {
+        showError(
+          authMessages.login.tooManyAttempts.title,
+          authMessages.login.tooManyAttempts.message
+        );
+      } else if (error.includes('network') || error.includes('connection')) {
+        showError(
+          authMessages.login.serverError.title,
+          authMessages.login.serverError.message
+        );
+      } else {
+        // Generic error
+        showError('Login Failed', error);
+      }
     }
   }, [error, showError]);
 
@@ -41,22 +74,23 @@ const LoginPage: React.FC = () => {
     e.preventDefault();
     
     // Basic validation
-    if (!email.trim()) {
-      showError('Email Required', 'Please enter your email address to continue.');
-      return;
-    }
-    
-    if (!password) {
-      showError('Password Required', 'Please enter your password to continue.');
+    if (!email.trim() || !password) {
+      showError(
+        authMessages.login.emptyFields.title,
+        authMessages.login.emptyFields.message
+      );
       return;
     }
     
     try {
       await signIn(email, password);
-      showSuccess('Login Successful', 'Welcome back! You have been successfully logged in.');
+      showSuccess(
+        authMessages.login.success.title,
+        authMessages.login.success.message
+      );
       // Navigation will be handled by the useEffect above
     } catch (error) {
-      // Error is handled by the context and notification system
+      // Error is handled by the useEffect above
       console.error('Login failed:', error);
     }
   };

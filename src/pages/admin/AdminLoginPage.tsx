@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { Eye, EyeOff, Shield, AlertCircle } from 'lucide-react';
-import { useAuth } from '../../contexts/AuthContext';
+import { Eye, EyeOff, Shield } from 'lucide-react';
 import { Helmet } from 'react-helmet-async';
+import { useAuth } from '../../contexts/AuthContext';
+import { useToast } from '../../contexts/ToastContext';
+import { authMessages } from '../../utils/authMessages';
 
 const AdminLoginPage: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -10,6 +12,7 @@ const AdminLoginPage: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
   
   const { signIn, error, isAuthenticated, isAdmin, loading, clearError } = useAuth();
+  const { showError, showSuccess } = useToast();
   const navigate = useNavigate();
   const location = useLocation();
   
@@ -27,12 +30,40 @@ const AdminLoginPage: React.FC = () => {
     clearError();
   }, [clearError]);
 
+  useEffect(() => {
+    if (error) {
+      if (error.includes('Invalid login credentials')) {
+        showError(
+          authMessages.login.invalidCredentials.title,
+          authMessages.login.invalidCredentials.message
+        );
+      } else if (error.includes('user not found')) {
+        showError(
+          authMessages.login.userNotFound.title,
+          authMessages.login.userNotFound.message
+        );
+      } else {
+        showError('Login Failed', error);
+      }
+    }
+  }, [error, showError]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Basic validation
+    if (!email.trim() || !password) {
+      showError(
+        authMessages.login.emptyFields.title,
+        authMessages.login.emptyFields.message
+      );
+      return;
+    }
     
     try {
       await signIn(email, password);
       // Navigation will be handled by the useEffect above
+      showSuccess('Login Successful', 'Welcome to the admin panel.');
     } catch (error) {
       // Error is handled by context
       console.error('Admin login failed:', error);
@@ -62,16 +93,6 @@ const AdminLoginPage: React.FC = () => {
               Masuk ke panel administrasi Properti Pro
             </p>
           </div>
-          
-          {error && (
-            <div className="bg-error-50 border border-error-200 text-error-700 p-3 rounded-md mb-4 flex items-start">
-              <AlertCircle size={18} className="mr-2 mt-0.5 flex-shrink-0" />
-              <div>
-                <p className="font-medium">Login gagal</p>
-                <p className="text-sm">{error}</p>
-              </div>
-            </div>
-          )}
           
           <form onSubmit={handleSubmit}>
             <div className="mb-4">
