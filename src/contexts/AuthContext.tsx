@@ -79,8 +79,35 @@ export const useAuth = () => {
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [state, dispatch] = React.useReducer(authReducer, initialState);
 
-  // Fetch user profile from database
-  const fetchUserProfile = async (supabaseUser: SupabaseUser): Promise<User | null> => {
+  // Create user profile if it doesn't exist
+  const createUserProfile = async (supabaseUser: SupabaseUser, userData?: { fullName: string; phone?: string; role?: string }): Promise<UserProfile> => {
+    const profileData = {
+      id: supabaseUser.id,
+      full_name: userData?.fullName || supabaseUser.user_metadata?.full_name || '',
+      phone: userData?.phone || supabaseUser.user_metadata?.phone || null,
+      role: (userData?.role || supabaseUser.user_metadata?.role || 'user') as Database['public']['Enums']['user_role'],
+      status: 'active' as Database['public']['Enums']['user_status'],
+      avatar_url: null,
+      company: null,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    };
+
+    const { data, error } = await supabase
+      .from('user_profiles')
+      .insert(profileData)
+      .select()
+      .single();
+
+    if (error) {
+      throw error;
+    }
+
+    return data;
+  };
+
+  // Fetch user profile from database with retry logic
+  const fetchUserProfile = async (supabaseUser: SupabaseUser, userData?: { fullName: string; phone?: string; role?: string }, retryCount = 0): Promise<User | null> => {
     try {
       const { data: profile, error } = await supabase
         .from('user_profiles')
@@ -89,8 +116,34 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         .single();
 
       if (error) {
+        // If profile doesn't exist and this is a new signup, create it
+        if (error.code === 'PGRST116' && userData && retryCount < 3) {
+          console.log('Profile not found, creating new profile...');
+          try {
+            const newProfile = await createUserProfile(supabaseUser, userData);
+            return {
+              ...newProfile,
+              email: supabaseUser.email || '',
+            };
+          } catch (createError) {
+            console.error('Error creating user profile:', createError);
+            // If creation fails, retry fetching in case it was created by trigger
+            if (retryCount < 2) {
+              await new Promise(resolve => setTimeout(resolve, 1000)); // Wait 1 second
+              return fetchUserProfile(supabaseUser, userData, retryCount + 1);
+            }
+            throw createError;
+          }
+        }
+        
+        // If it's just a fetch error and we have retry attempts left, try again
+        if (retryCount < 2) {
+          await new Promise(resolve => setTimeout(resolve, 1000)); // Wait 1 second
+          return fetchUserProfile(supabaseUser, userData, retryCount + 1);
+        }
+        
         console.error('Error fetching user profile:', error);
-        return null;
+        throw error;
       }
 
       return {
@@ -99,12 +152,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       };
     } catch (error) {
       console.error('Error fetching user profile:', error);
-      return null;
+      
+      // If this is a network error and we have retries left, try again
+      if (retryCount < 2 && (error as any)?.message?.includes('fetch')) {
+        await new Promise(resolve => setTimeout(resolve, 1000)); // Wait 1 second
+        return fetchUserProfile(supabaseUser, userData, retryCount + 1);
+      }
+      
+      throw error;
     }
   };
 
   // Handle session changes
-  const handleSessionChange = (session: Session | null) => {
+  const handleSessionChange = (session: Session | null, userData?: { fullName: string; phone?: string; role?: string }) => {
     if (!session?.user) {
       dispatch({ type: 'SET_SESSION', payload: { session: null, user: null } });
       return;
@@ -113,7 +173,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Use setTimeout to avoid deadlocks with Supabase auth
     setTimeout(async () => {
       try {
-        const userProfile = await fetchUserProfile(session.user);
+        const userProfile = await fetchUserProfile(session.user, userData);
         dispatch({ type: 'SET_SESSION', payload: { session, user: userProfile } });
       } catch (error) {
         console.error('Error handling session change:', error);
@@ -173,7 +233,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       // If email confirmation is disabled, the user will be automatically signed in
       if (data.session) {
-        handleSessionChange(data.session);
+        handleSessionChange(data.session, userData);
       } else {
         dispatch({ type: 'SET_LOADING', payload: false });
       }
