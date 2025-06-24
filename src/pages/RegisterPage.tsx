@@ -1,326 +1,290 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import Layout from '../components/layout/Layout';
-import { Eye, EyeOff } from 'lucide-react';
 import { Helmet } from 'react-helmet-async';
+import { Eye, EyeOff, Mail, Lock, User, Check } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNotification } from '../contexts/NotificationContext';
-import { parseSupabaseError, errorMessages } from '../utils/errorMessages';
 
 const RegisterPage: React.FC = () => {
   const [formData, setFormData] = useState({
-    fullName: '',
     email: '',
-    phone: '',
     password: '',
     confirmPassword: '',
-    role: 'user' as 'user' | 'agent',
-    agreeTerms: false,
+    fullName: '',
+    agreeTerms: false
   });
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   
-  const { signUp, isAuthenticated, loading, error, clearError } = useAuth();
+  const { signUp, isAuthenticated, error, clearError } = useAuth();
   const { showError, showSuccess } = useNotification();
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (isAuthenticated) {
-      navigate('/', { replace: true });
-    }
-  }, [isAuthenticated, navigate]);
-
-  useEffect(() => {
+    // Clear any previous auth errors
     clearError();
   }, [clearError]);
 
   useEffect(() => {
-    if (error) {
-      const { title, message } = parseSupabaseError(error);
-      showError(title, message);
+    // If user is already authenticated, redirect to home
+    if (isAuthenticated) {
+      navigate('/');
     }
-  }, [error, showError]);
-  
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    const { name, value, type } = e.target;
-    const checked = type === 'checkbox' ? (e.target as HTMLInputElement).checked : undefined;
-    
-    setFormData(prev => ({
-      ...prev,
+  }, [isAuthenticated, navigate]);
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value, type, checked } = e.target;
+    setFormData({
+      ...formData,
       [name]: type === 'checkbox' ? checked : value
-    }));
+    });
   };
 
   const validateForm = (): boolean => {
-    // Check full name
-    if (!formData.fullName.trim()) {
-      showError('Name Required', 'Please enter your full name to continue.');
-      return false;
-    }
-
-    // Check email
+    // Email validation
     if (!formData.email.trim()) {
-      showError('Email Required', 'Please enter your email address to continue.');
-      return false;
-    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-      showError(
-        errorMessages.validation.invalidEmail.title,
-        errorMessages.validation.invalidEmail.message
-      );
+      showError('Validasi Gagal', 'Email wajib diisi');
       return false;
     }
-
-    // Check password
+    
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(formData.email)) {
+      showError('Validasi Gagal', 'Format email tidak valid');
+      return false;
+    }
+    
+    // Password validation
     if (!formData.password) {
-      showError('Password Required', 'Please create a password for your account.');
-      return false;
-    } else if (formData.password.length < 8) {
-      showError(
-        errorMessages.validation.passwordTooShort.title,
-        errorMessages.validation.passwordTooShort.message
-      );
+      showError('Validasi Gagal', 'Password wajib diisi');
       return false;
     }
-
-    // Check password confirmation
+    
+    if (formData.password.length < 6) {
+      showError('Validasi Gagal', 'Password minimal 6 karakter');
+      return false;
+    }
+    
+    // Confirm password
     if (formData.password !== formData.confirmPassword) {
-      showError(
-        errorMessages.validation.passwordMismatch.title,
-        errorMessages.validation.passwordMismatch.message
-      );
+      showError('Validasi Gagal', 'Password dan konfirmasi password tidak cocok');
       return false;
     }
-
-    // Check terms agreement
+    
+    // Full name
+    if (!formData.fullName.trim()) {
+      showError('Validasi Gagal', 'Nama lengkap wajib diisi');
+      return false;
+    }
+    
+    // Terms agreement
     if (!formData.agreeTerms) {
-      showError(
-        'Terms Agreement Required',
-        'Please agree to the Terms and Conditions to create an account.'
-      );
+      showError('Validasi Gagal', 'Anda harus menyetujui syarat dan ketentuan');
       return false;
     }
-
+    
     return true;
   };
-  
-  const handleRegister = async (e: React.FormEvent) => {
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!validateForm()) {
       return;
     }
     
+    setIsSubmitting(true);
+    
     try {
       await signUp(formData.email, formData.password, {
-        fullName: formData.fullName,
-        phone: formData.phone || undefined,
-        role: formData.role,
+        fullName: formData.fullName
       });
-
+      
       showSuccess(
-        'Registration Successful',
-        'Your account has been created successfully. You can now log in.'
+        'Pendaftaran Berhasil', 
+        'Akun Anda telah berhasil dibuat. Silakan masuk dengan akun baru Anda.'
       );
       
-      // Navigate to login page after successful registration
-      setTimeout(() => {
-        navigate('/login');
-      }, 2000);
-    } catch (error) {
-      // Error is handled by the context and notification system
-      console.error('Registration failed:', error);
+      // Redirect to login page
+      navigate('/login');
+    } catch (error: any) {
+      // Error is already handled by the auth context
+      console.error('Registration error:', error);
+    } finally {
+      setIsSubmitting(false);
     }
   };
-  
+
   return (
-    <Layout>
+    <div className="min-h-screen bg-neutral-50 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
       <Helmet>
-        <title>Daftar | Properti Pro</title>
-        <meta name="description" content="Daftar akun Properti Pro untuk akses ke fitur-fitur eksklusif dalam mencari, menjual, atau menyewa properti di Indonesia." />
-        <meta name="robots" content="noindex, nofollow" />
+        <title>Daftar | Real Estate Management</title>
+        <meta name="description" content="Daftar akun baru untuk mengelola properti" />
       </Helmet>
       
-      <div className="bg-neutral-100 py-12">
-        <div className="container mx-auto px-4">
-          <div className="max-w-md mx-auto bg-white rounded-lg shadow-md overflow-hidden">
-            <div className="p-6">
-              <h1 className="font-heading font-bold text-2xl text-accent mb-6 text-center">
-                Daftar di <span className="text-primary">Properti Pro</span>
-              </h1>
-              
-              <form onSubmit={handleRegister}>
-                <div className="mb-4">
-                  <label htmlFor="fullName" className="block text-sm font-medium text-neutral-700 mb-1">
-                    Nama Lengkap
-                  </label>
-                  <input
-                    type="text"
-                    id="fullName"
-                    name="fullName"
-                    className="w-full px-4 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50"
-                    placeholder="Masukkan nama lengkap"
-                    value={formData.fullName}
-                    onChange={handleChange}
-                    required
-                    disabled={loading}
-                  />
-                </div>
-                
-                <div className="mb-4">
-                  <label htmlFor="email" className="block text-sm font-medium text-neutral-700 mb-1">
-                    Email
-                  </label>
-                  <input
-                    type="email"
-                    id="email"
-                    name="email"
-                    className="w-full px-4 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50"
-                    placeholder="Masukkan email"
-                    value={formData.email}
-                    onChange={handleChange}
-                    required
-                    disabled={loading}
-                  />
-                </div>
-                
-                <div className="mb-4">
-                  <label htmlFor="phone" className="block text-sm font-medium text-neutral-700 mb-1">
-                    Nomor Telepon <span className="text-neutral-400">(Opsional)</span>
-                  </label>
-                  <input
-                    type="tel"
-                    id="phone"
-                    name="phone"
-                    className="w-full px-4 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50"
-                    placeholder="Masukkan nomor telepon"
-                    value={formData.phone}
-                    onChange={handleChange}
-                    disabled={loading}
-                  />
-                </div>
-
-                <div className="mb-4">
-                  <label htmlFor="role" className="block text-sm font-medium text-neutral-700 mb-1">
-                    Jenis Akun
-                  </label>
-                  <select
-                    id="role"
-                    name="role"
-                    className="w-full px-4 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50"
-                    value={formData.role}
-                    onChange={handleChange}
-                    disabled={loading}
-                  >
-                    <option value="user">Pengguna (Pencari Properti)</option>
-                    <option value="agent">Agen Properti</option>
-                  </select>
-                </div>
-                
-                <div className="mb-4">
-                  <label htmlFor="password" className="block text-sm font-medium text-neutral-700 mb-1">
-                    Password
-                  </label>
-                  <div className="relative">
-                    <input
-                      type={showPassword ? 'text' : 'password'}
-                      id="password"
-                      name="password"
-                      className="w-full px-4 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50"
-                      placeholder="Masukkan password"
-                      value={formData.password}
-                      onChange={handleChange}
-                      required
-                      minLength={8}
-                      disabled={loading}
-                    />
-                    <button
-                      type="button"
-                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-neutral-500"
-                      onClick={() => setShowPassword(!showPassword)}
-                      tabIndex={-1}
-                    >
-                      {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                    </button>
-                  </div>
-                  <p className="text-xs text-neutral-500 mt-1">
-                    Password minimal 8 karakter
-                  </p>
-                </div>
-                
-                <div className="mb-6">
-                  <label htmlFor="confirmPassword" className="block text-sm font-medium text-neutral-700 mb-1">
-                    Konfirmasi Password
-                  </label>
-                  <div className="relative">
-                    <input
-                      type={showConfirmPassword ? 'text' : 'password'}
-                      id="confirmPassword"
-                      name="confirmPassword"
-                      className="w-full px-4 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50"
-                      placeholder="Konfirmasi password"
-                      value={formData.confirmPassword}
-                      onChange={handleChange}
-                      required
-                      disabled={loading}
-                    />
-                    <button
-                      type="button"
-                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-neutral-500"
-                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                      tabIndex={-1}
-                    >
-                      {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                    </button>
-                  </div>
-                </div>
-                
-                <div className="mb-6">
-                  <div className="flex items-start">
-                    <input
-                      type="checkbox"
-                      id="agreeTerms"
-                      name="agreeTerms"
-                      className="h-4 w-4 mt-1 text-primary border-neutral-300 rounded focus:ring-primary"
-                      checked={formData.agreeTerms}
-                      onChange={handleChange}
-                      required
-                      disabled={loading}
-                    />
-                    <label htmlFor="agreeTerms" className="ml-2 block text-sm text-neutral-700">
-                      Saya setuju dengan{' '}
-                      <Link to="/syarat-ketentuan" className="text-primary hover:underline">
-                        Syarat dan Ketentuan
-                      </Link>{' '}
-                      serta{' '}
-                      <Link to="/kebijakan-privasi" className="text-primary hover:underline">
-                        Kebijakan Privasi
-                      </Link>
-                    </label>
-                  </div>
-                </div>
-                
-                <button
-                  type="submit"
-                  className="w-full btn-primary py-2.5 disabled:opacity-50 disabled:cursor-not-allowed"
-                  disabled={loading}
-                >
-                  {loading ? 'Memproses...' : 'Daftar'}
-                </button>
-              </form>
-              
-              <div className="mt-6 text-center">
-                <p className="text-neutral-600">
-                  Sudah punya akun?{' '}
-                  <Link to="/login" className="text-primary font-medium hover:underline">
-                    Masuk
-                  </Link>
-                </p>
-              </div>
+      <div className="max-w-md w-full bg-white rounded-lg shadow-md p-8">
+        <div className="text-center mb-8">
+          <h1 className="text-3xl font-bold text-neutral-900 mb-2">Daftar</h1>
+          <p className="text-neutral-600">
+            Buat akun baru untuk mengelola properti
+          </p>
+        </div>
+        
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <div>
+            <label htmlFor="fullName" className="block text-sm font-medium text-neutral-700 mb-1">
+              Nama Lengkap
+            </label>
+            <div className="relative">
+              <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-neutral-500 h-5 w-5" />
+              <input
+                id="fullName"
+                name="fullName"
+                type="text"
+                required
+                value={formData.fullName}
+                onChange={handleChange}
+                className="w-full pl-10 pr-3 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50"
+                placeholder="Masukkan nama lengkap Anda"
+                disabled={isSubmitting}
+              />
             </div>
           </div>
+          
+          <div>
+            <label htmlFor="email" className="block text-sm font-medium text-neutral-700 mb-1">
+              Email
+            </label>
+            <div className="relative">
+              <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-neutral-500 h-5 w-5" />
+              <input
+                id="email"
+                name="email"
+                type="email"
+                autoComplete="email"
+                required
+                value={formData.email}
+                onChange={handleChange}
+                className="w-full pl-10 pr-3 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50"
+                placeholder="Masukkan email Anda"
+                disabled={isSubmitting}
+              />
+            </div>
+          </div>
+
+          <div>
+            <label htmlFor="password" className="block text-sm font-medium text-neutral-700 mb-1">
+              Password
+            </label>
+            <div className="relative">
+              <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-neutral-500 h-5 w-5" />
+              <input
+                id="password"
+                name="password"
+                type={showPassword ? 'text' : 'password'}
+                autoComplete="new-password"
+                required
+                value={formData.password}
+                onChange={handleChange}
+                className="w-full pl-10 pr-10 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50"
+                placeholder="Masukkan password Anda"
+                disabled={isSubmitting}
+              />
+              <button
+                type="button"
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-neutral-500"
+                onClick={() => setShowPassword(!showPassword)}
+              >
+                {showPassword ? (
+                  <EyeOff className="h-5 w-5" />
+                ) : (
+                  <Eye className="h-5 w-5" />
+                )}
+              </button>
+            </div>
+            <p className="mt-1 text-sm text-neutral-500">
+              Minimal 6 karakter
+            </p>
+          </div>
+
+          <div>
+            <label htmlFor="confirmPassword" className="block text-sm font-medium text-neutral-700 mb-1">
+              Konfirmasi Password
+            </label>
+            <div className="relative">
+              <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-neutral-500 h-5 w-5" />
+              <input
+                id="confirmPassword"
+                name="confirmPassword"
+                type={showConfirmPassword ? 'text' : 'password'}
+                autoComplete="new-password"
+                required
+                value={formData.confirmPassword}
+                onChange={handleChange}
+                className="w-full pl-10 pr-10 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50"
+                placeholder="Konfirmasi password Anda"
+                disabled={isSubmitting}
+              />
+              <button
+                type="button"
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-neutral-500"
+                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+              >
+                {showConfirmPassword ? (
+                  <EyeOff className="h-5 w-5" />
+                ) : (
+                  <Eye className="h-5 w-5" />
+                )}
+              </button>
+            </div>
+          </div>
+
+          <div className="flex items-center">
+            <input
+              id="agreeTerms"
+              name="agreeTerms"
+              type="checkbox"
+              checked={formData.agreeTerms}
+              onChange={handleChange}
+              className="h-4 w-4 text-primary border-neutral-300 rounded focus:ring-primary"
+              disabled={isSubmitting}
+            />
+            <label htmlFor="agreeTerms" className="ml-2 block text-sm text-neutral-700">
+              Saya menyetujui <Link to="/terms" className="text-primary hover:underline">Syarat dan Ketentuan</Link>
+            </label>
+          </div>
+
+          <div>
+            <button
+              type="submit"
+              disabled={isSubmitting}
+              className="w-full flex justify-center py-2 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-primary hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isSubmitting ? (
+                <>
+                  <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Memproses...
+                </>
+              ) : (
+                'Daftar'
+              )}
+            </button>
+          </div>
+        </form>
+
+        <div className="mt-6 text-center">
+          <p className="text-sm text-neutral-600">
+            Sudah punya akun?{' '}
+            <Link to="/login" className="text-primary hover:text-primary/80 font-medium">
+              Masuk
+            </Link>
+          </p>
         </div>
       </div>
-    </Layout>
+    </div>
   );
 };
 

@@ -1,330 +1,261 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
-import { User as SupabaseUser, Session, AuthError } from '@supabase/supabase-js';
+import React, { createContext, useContext, useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
-import { Database } from '../types/supabase';
 
-type UserProfile = Database['public']['Tables']['user_profiles']['Row'];
-
-export interface User extends UserProfile {
+interface User {
+  id: string;
   email: string;
+  full_name: string;
+  role?: string;
 }
 
-interface AuthState {
+interface AuthContextType {
   user: User | null;
-  session: Session | null;
   isAuthenticated: boolean;
   loading: boolean;
   error: string | null;
-}
-
-type AuthAction =
-  | { type: 'SET_LOADING'; payload: boolean }
-  | { type: 'SET_SESSION'; payload: { session: Session | null; user: User | null } }
-  | { type: 'SET_ERROR'; payload: string | null }
-  | { type: 'CLEAR_ERROR' };
-
-const initialState: AuthState = {
-  user: null,
-  session: null,
-  isAuthenticated: false,
-  loading: true,
-  error: null,
-};
-
-const authReducer = (state: AuthState, action: AuthAction): AuthState => {
-  switch (action.type) {
-    case 'SET_LOADING':
-      return { ...state, loading: action.payload };
-    case 'SET_SESSION':
-      return {
-        ...state,
-        session: action.payload.session,
-        user: action.payload.user,
-        isAuthenticated: !!action.payload.session,
-        loading: false,
-        error: null,
-      };
-    case 'SET_ERROR':
-      return { ...state, error: action.payload, loading: false };
-    case 'CLEAR_ERROR':
-      return { ...state, error: null };
-    default:
-      return state;
-  }
-};
-
-interface AuthContextType extends AuthState {
-  signUp: (email: string, password: string, userData: { fullName: string; phone?: string; role?: string }) => Promise<void>;
+  signUp: (email: string, password: string, userData: { fullName: string }) => Promise<void>;
   signIn: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
   resetPassword: (email: string) => Promise<void>;
   updatePassword: (password: string) => Promise<void>;
-  updateProfile: (updates: Partial<UserProfile>) => Promise<void>;
   clearError: () => void;
-  isAdmin: () => boolean;
-  isSuperAdmin: () => boolean;
-  refreshSession: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
-  if (context === undefined) {
+  if (!context) {
     throw new Error('useAuth must be used within an AuthProvider');
   }
   return context;
 };
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [state, dispatch] = React.useReducer(authReducer, initialState);
-
-  // Fetch user profile from database
-  const fetchUserProfile = async (supabaseUser: SupabaseUser): Promise<User | null> => {
-    try {
-      const { data: profile, error } = await supabase
-        .from('user_profiles')
-        .select('*')
-        .eq('id', supabaseUser.id)
-        .single();
-
-      if (error) {
-        console.error('Error fetching user profile:', error);
-        return null;
-      }
-
-      return {
-        ...profile,
-        email: supabaseUser.email || '',
-      };
-    } catch (error) {
-      console.error('Error fetching user profile:', error);
-      return null;
-    }
-  };
-
-  // Handle session changes
-  const handleSessionChange = (session: Session | null) => {
-    if (!session?.user) {
-      dispatch({ type: 'SET_SESSION', payload: { session: null, user: null } });
-      return;
-    }
-    
-    // Use setTimeout to avoid deadlocks with Supabase auth
-    setTimeout(async () => {
-      try {
-        const userProfile = await fetchUserProfile(session.user);
-        dispatch({ type: 'SET_SESSION', payload: { session, user: userProfile } });
-      } catch (error) {
-        console.error('Error handling session change:', error);
-        dispatch({ type: 'SET_ERROR', payload: 'Failed to load user profile' });
-      }
-    }, 0);
-  };
+  const [user, setUser] = useState<User | null>(null);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    // Get initial session
-    const getInitialSession = async () => {
+    // Check active session
+    const checkSession = async () => {
       try {
         const { data: { session }, error } = await supabase.auth.getSession();
+        
         if (error) {
-          console.error('Error getting session:', error);
-          dispatch({ type: 'SET_ERROR', payload: error.message });
-        } else {
-          handleSessionChange(session);
+          throw error;
+        }
+        
+        if (session) {
+          const { data: { user } } = await supabase.auth.getUser();
+          
+          if (user) {
+            // Get user profile data
+            const { data: profile, error: profileError } = await supabase
+              .from('user_profiles')
+              .select('*')
+              .eq('id', user.id)
+              .single();
+              
+            if (profileError && profileError.code !== 'PGRST116') {
+              console.error('Error fetching user profile:', profileError);
+            }
+            
+            setUser({
+              id: user.id,
+              email: user.email || '',
+              full_name: profile?.full_name || user.user_metadata?.full_name || '',
+              role: profile?.role || 'user'
+            });
+            setIsAuthenticated(true);
+          }
         }
       } catch (error) {
-        console.error('Error getting initial session:', error);
-        dispatch({ type: 'SET_ERROR', payload: 'Failed to initialize authentication' });
+        console.error('Session check error:', error);
+      } finally {
+        setLoading(false);
       }
     };
-
-    getInitialSession();
-
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      console.log('Auth state changed:', event, session?.user?.email);
-      handleSessionChange(session);
-    });
-
-    return () => subscription.unsubscribe();
+    
+    checkSession();
+    
+    // Set up auth state change listener
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        if (session && session.user) {
+          // Get user profile data
+          const { data: profile, error: profileError } = await supabase
+            .from('user_profiles')
+            .select('*')
+            .eq('id', session.user.id)
+            .single();
+            
+          if (profileError && profileError.code !== 'PGRST116') {
+            console.error('Error fetching user profile:', profileError);
+          }
+          
+          setUser({
+            id: session.user.id,
+            email: session.user.email || '',
+            full_name: profile?.full_name || session.user.user_metadata?.full_name || '',
+            role: profile?.role || 'user'
+          });
+          setIsAuthenticated(true);
+        } else {
+          setUser(null);
+          setIsAuthenticated(false);
+        }
+        
+        setLoading(false);
+      }
+    );
+    
+    return () => {
+      subscription.unsubscribe();
+    };
   }, []);
 
-  const signUp = async (email: string, password: string, userData: { fullName: string; phone?: string; role?: string }) => {
-    dispatch({ type: 'SET_LOADING', payload: true });
-    dispatch({ type: 'CLEAR_ERROR' });
-
+  const signUp = async (email: string, password: string, userData: { fullName: string }) => {
+    setLoading(true);
+    setError(null);
+    
     try {
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
           data: {
-            full_name: userData.fullName,
-            phone: userData.phone,
-            role: userData.role || 'user',
-          },
-        },
+            full_name: userData.fullName
+          }
+        }
       });
-
-      if (error) {
-        throw error;
+      
+      if (error) throw error;
+      
+      // Create user profile
+      if (data.user) {
+        const { error: profileError } = await supabase
+          .from('user_profiles')
+          .insert({
+            id: data.user.id,
+            full_name: userData.fullName,
+            role: 'user'
+          });
+          
+        if (profileError) {
+          console.error('Error creating user profile:', profileError);
+          throw profileError;
+        }
       }
-
-      // If email confirmation is disabled, the user will be automatically signed in
-      if (data.session) {
-        handleSessionChange(data.session);
-      } else {
-        dispatch({ type: 'SET_LOADING', payload: false });
-      }
-    } catch (error) {
-      const authError = error as AuthError;
-      dispatch({ type: 'SET_ERROR', payload: authError.message });
+    } catch (error: any) {
+      setError(error.message);
       throw error;
+    } finally {
+      setLoading(false);
     }
   };
 
   const signIn = async (email: string, password: string) => {
-    dispatch({ type: 'SET_LOADING', payload: true });
-    dispatch({ type: 'CLEAR_ERROR' });
-
+    setLoading(true);
+    setError(null);
+    
     try {
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
-        password,
+        password
       });
-
-      if (error) {
-        throw error;
+      
+      if (error) throw error;
+      
+      if (data.user) {
+        // Get user profile data
+        const { data: profile, error: profileError } = await supabase
+          .from('user_profiles')
+          .select('*')
+          .eq('id', data.user.id)
+          .single();
+          
+        if (profileError && profileError.code !== 'PGRST116') {
+          console.error('Error fetching user profile:', profileError);
+        }
+        
+        setUser({
+          id: data.user.id,
+          email: data.user.email || '',
+          full_name: profile?.full_name || data.user.user_metadata?.full_name || '',
+          role: profile?.role || 'user'
+        });
+        setIsAuthenticated(true);
       }
-
-      handleSessionChange(data.session);
-    } catch (error) {
-      const authError = error as AuthError;
-      dispatch({ type: 'SET_ERROR', payload: authError.message });
+    } catch (error: any) {
+      setError(error.message);
       throw error;
+    } finally {
+      setLoading(false);
     }
   };
 
   const signOut = async () => {
-    dispatch({ type: 'SET_LOADING', payload: true });
+    setLoading(true);
+    setError(null);
     
     try {
       const { error } = await supabase.auth.signOut();
-      if (error) {
-        throw error;
-      }
-    } catch (error) {
-      const authError = error as AuthError;
-      dispatch({ type: 'SET_ERROR', payload: authError.message });
+      if (error) throw error;
+      
+      setUser(null);
+      setIsAuthenticated(false);
+    } catch (error: any) {
+      setError(error.message);
       throw error;
+    } finally {
+      setLoading(false);
     }
   };
 
   const resetPassword = async (email: string) => {
-    dispatch({ type: 'CLEAR_ERROR' });
-
+    setError(null);
+    
     try {
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
         redirectTo: `${window.location.origin}/reset-password`,
       });
-
-      if (error) {
-        throw error;
-      }
-    } catch (error) {
-      const authError = error as AuthError;
-      dispatch({ type: 'SET_ERROR', payload: authError.message });
+      
+      if (error) throw error;
+    } catch (error: any) {
+      setError(error.message);
       throw error;
     }
   };
 
   const updatePassword = async (password: string) => {
-    dispatch({ type: 'CLEAR_ERROR' });
-
+    setError(null);
+    
     try {
       const { error } = await supabase.auth.updateUser({ password });
-
-      if (error) {
-        throw error;
-      }
-    } catch (error) {
-      const authError = error as AuthError;
-      dispatch({ type: 'SET_ERROR', payload: authError.message });
-      throw error;
-    }
-  };
-
-  const updateProfile = async (updates: Partial<UserProfile>) => {
-    if (!state.user) {
-      throw new Error('No user logged in');
-    }
-
-    dispatch({ type: 'CLEAR_ERROR' });
-
-    try {
-      const { data, error } = await supabase
-        .from('user_profiles')
-        .update(updates)
-        .eq('id', state.user.id)
-        .select()
-        .single();
-
-      if (error) {
-        throw error;
-      }
-
-      // Update local state
-      const updatedUser = { ...state.user, ...data };
-      dispatch({ 
-        type: 'SET_SESSION', 
-        payload: { session: state.session, user: updatedUser } 
-      });
-    } catch (error) {
-      const dbError = error as any;
-      dispatch({ type: 'SET_ERROR', payload: dbError.message });
-      throw error;
-    }
-  };
-
-  const refreshSession = async () => {
-    try {
-      const { data: { session }, error } = await supabase.auth.refreshSession();
-      if (error) {
-        throw error;
-      }
-      handleSessionChange(session);
-    } catch (error) {
-      const authError = error as AuthError;
-      dispatch({ type: 'SET_ERROR', payload: authError.message });
+      if (error) throw error;
+    } catch (error: any) {
+      setError(error.message);
       throw error;
     }
   };
 
   const clearError = () => {
-    dispatch({ type: 'CLEAR_ERROR' });
+    setError(null);
   };
 
-  const isAdmin = () => {
-    return state.user?.role === 'admin' || state.user?.role === 'superadmin';
-  };
-
-  const isSuperAdmin = () => {
-    return state.user?.role === 'superadmin';
-  };
-
-  const value: AuthContextType = {
-    ...state,
+  const value = {
+    user,
+    isAuthenticated,
+    loading,
+    error,
     signUp,
     signIn,
     signOut,
     resetPassword,
     updatePassword,
-    updateProfile,
-    clearError,
-    isAdmin,
-    isSuperAdmin,
-    refreshSession,
+    clearError
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

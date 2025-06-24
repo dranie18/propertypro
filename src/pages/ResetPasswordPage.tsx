@@ -1,279 +1,252 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useSearchParams, useNavigate } from 'react-router-dom';
-import Layout from '../components/layout/Layout';
-import { Eye, EyeOff, Lock } from 'lucide-react';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
+import { Eye, EyeOff, Lock, CheckCircle } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNotification } from '../contexts/NotificationContext';
-import { parseSupabaseError, errorMessages } from '../utils/errorMessages';
 
 const ResetPasswordPage: React.FC = () => {
-  const [searchParams] = useSearchParams();
-  const navigate = useNavigate();
-  
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [isSuccess, setIsSuccess] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSuccessful, setIsSuccessful] = useState(false);
   
-  const { updatePassword, loading, error, clearError, session } = useAuth();
-  const { showError, showSuccess, showWarning } = useNotification();
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
+  
+  const { updatePassword } = useAuth();
+  const { showError, showSuccess } = useNotification();
+
+  // Check if we have a valid token in the URL
+  const hasValidToken = searchParams.has('token');
 
   useEffect(() => {
-    clearError();
-  }, [clearError]);
-
-  useEffect(() => {
-    if (error) {
-      const { title, message } = parseSupabaseError(error);
-      showError(title, message);
-    }
-  }, [error, showError]);
-
-  useEffect(() => {
-    if (!session) {
-      showWarning(
-        'Invalid or Expired Link',
-        'This password reset link is invalid or has expired. Please request a new link.'
-      );
-    }
-  }, [session, showWarning]);
-
-  const validatePassword = (password: string): boolean => {
-    if (password.length < 8) {
+    if (!hasValidToken) {
       showError(
-        errorMessages.validation.passwordTooShort.title,
-        errorMessages.validation.passwordTooShort.message
+        'Token Tidak Valid', 
+        'Link reset password tidak valid atau telah kedaluwarsa. Silakan minta link baru.'
       );
-      return false;
     }
-    
-    // You can add more password validation rules here
-    return true;
-  };
+  }, [hasValidToken, showError]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Validate passwords
-    if (!validatePassword(password)) {
+    // Basic validation
+    if (!password) {
+      showError('Validasi Gagal', 'Password wajib diisi');
       return;
     }
-
+    
+    if (password.length < 6) {
+      showError('Validasi Gagal', 'Password minimal 6 karakter');
+      return;
+    }
+    
     if (password !== confirmPassword) {
-      showError(
-        errorMessages.validation.passwordMismatch.title,
-        errorMessages.validation.passwordMismatch.message
-      );
+      showError('Validasi Gagal', 'Password dan konfirmasi password tidak cocok');
       return;
     }
-
+    
+    setIsSubmitting(true);
+    
     try {
       await updatePassword(password);
-      setIsSuccess(true);
+      setIsSuccessful(true);
       showSuccess(
-        'Password Reset Successful',
-        'Your password has been reset successfully. You can now log in with your new password.'
+        'Password Berhasil Diubah', 
+        'Password Anda telah berhasil diubah. Silakan masuk dengan password baru Anda.'
       );
-      
-      // Redirect to login after 3 seconds
-      setTimeout(() => {
-        navigate('/login');
-      }, 3000);
-    } catch (error) {
-      // Error is handled by context and notification system
-      console.error('Password update failed:', error);
+    } catch (error: any) {
+      showError(
+        'Gagal Mengubah Password', 
+        error.message || 'Terjadi kesalahan saat mengubah password'
+      );
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
-  // Check if user has a valid session (from reset link)
-  if (!session) {
+  if (!hasValidToken) {
     return (
-      <Layout>
+      <div className="min-h-screen bg-neutral-50 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
         <Helmet>
-          <title>Link Tidak Valid | Properti Pro</title>
-          <meta name="description" content="Link reset password tidak valid atau telah kedaluwarsa." />
-          <meta name="robots" content="noindex, nofollow" />
+          <title>Link Tidak Valid | Real Estate Management</title>
+          <meta name="description" content="Link reset password tidak valid" />
         </Helmet>
         
-        <div className="bg-neutral-100 py-12">
-          <div className="container mx-auto px-4">
-            <div className="max-w-md mx-auto bg-white rounded-lg shadow-md overflow-hidden">
-              <div className="p-6 text-center">
-                <div className="w-16 h-16 bg-yellow-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <Lock size={32} className="text-yellow-600" />
-                </div>
-                
-                <h1 className="font-heading font-bold text-2xl text-accent mb-4">
-                  Link Tidak Valid
-                </h1>
-                
-                <p className="text-neutral-600 mb-6">
-                  Link reset password tidak valid atau telah kedaluwarsa. Silakan minta link reset password yang baru.
-                </p>
-                
-                <div className="space-y-3">
-                  <Link to="/forgot-password" className="w-full btn-primary block">
-                    Minta Link Baru
-                  </Link>
-                  
-                  <Link to="/login" className="w-full btn-secondary block">
-                    Kembali ke Halaman Masuk
-                  </Link>
-                </div>
-              </div>
+        <div className="max-w-md w-full bg-white rounded-lg shadow-md p-8">
+          <div className="text-center mb-6">
+            <div className="mx-auto w-16 h-16 bg-red-100 rounded-full flex items-center justify-center">
+              <Lock className="h-8 w-8 text-red-600" />
             </div>
+            <h1 className="mt-4 text-2xl font-bold text-neutral-900">Link Tidak Valid</h1>
+            <p className="mt-2 text-neutral-600">
+              Link reset password tidak valid atau telah kedaluwarsa.
+            </p>
+          </div>
+          
+          <div className="mt-6">
+            <Link
+              to="/forgot-password"
+              className="w-full flex justify-center py-2 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-primary hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
+            >
+              Minta Link Baru
+            </Link>
           </div>
         </div>
-      </Layout>
+      </div>
     );
   }
 
-  // Success state
-  if (isSuccess) {
+  if (isSuccessful) {
     return (
-      <Layout>
+      <div className="min-h-screen bg-neutral-50 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
         <Helmet>
-          <title>Password Berhasil Direset | Properti Pro</title>
-          <meta name="description" content="Password Anda berhasil direset. Silakan masuk dengan password baru." />
-          <meta name="robots" content="noindex, nofollow" />
+          <title>Password Berhasil Diubah | Real Estate Management</title>
+          <meta name="description" content="Password berhasil diubah" />
         </Helmet>
         
-        <div className="bg-neutral-100 py-12">
-          <div className="container mx-auto px-4">
-            <div className="max-w-md mx-auto bg-white rounded-lg shadow-md overflow-hidden">
-              <div className="p-6 text-center">
-                <div className="w-16 h-16 bg-success-50 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <Lock size={32} className="text-success-500" />
-                </div>
-                
-                <h1 className="font-heading font-bold text-2xl text-accent mb-4">
-                  Password Berhasil Direset!
-                </h1>
-                
-                <p className="text-neutral-600 mb-6">
-                  Password Anda telah berhasil direset. Anda akan dialihkan ke halaman masuk dalam beberapa detik.
-                </p>
-                
-                <Link to="/login" className="w-full btn-primary block">
-                  Masuk Sekarang
-                </Link>
-              </div>
+        <div className="max-w-md w-full bg-white rounded-lg shadow-md p-8">
+          <div className="text-center mb-6">
+            <div className="mx-auto w-16 h-16 bg-green-100 rounded-full flex items-center justify-center">
+              <CheckCircle className="h-8 w-8 text-green-600" />
             </div>
+            <h1 className="mt-4 text-2xl font-bold text-neutral-900">Password Berhasil Diubah</h1>
+            <p className="mt-2 text-neutral-600">
+              Password Anda telah berhasil diubah. Silakan masuk dengan password baru Anda.
+            </p>
+          </div>
+          
+          <div className="mt-6">
+            <Link
+              to="/login"
+              className="w-full flex justify-center py-2 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-primary hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
+            >
+              Masuk Sekarang
+            </Link>
           </div>
         </div>
-      </Layout>
+      </div>
     );
   }
 
   return (
-    <Layout>
+    <div className="min-h-screen bg-neutral-50 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
       <Helmet>
-        <title>Reset Password | Properti Pro</title>
-        <meta name="description" content="Buat password baru untuk akun Properti Pro Anda." />
-        <meta name="robots" content="noindex, nofollow" />
+        <title>Reset Password | Real Estate Management</title>
+        <meta name="description" content="Reset password akun Anda" />
       </Helmet>
       
-      <div className="bg-neutral-100 py-12">
-        <div className="container mx-auto px-4">
-          <div className="max-w-md mx-auto bg-white rounded-lg shadow-md overflow-hidden">
-            <div className="p-6">
-              <div className="text-center mb-6">
-                <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <Lock size={32} className="text-primary" />
-                </div>
-                
-                <h1 className="font-heading font-bold text-2xl text-accent mb-2">
-                  Reset Password
-                </h1>
-                
-                <p className="text-neutral-600">
-                  Masukkan password baru untuk akun Anda
-                </p>
-              </div>
-              
-              <form onSubmit={handleSubmit}>
-                <div className="mb-4">
-                  <label htmlFor="password" className="block text-sm font-medium text-neutral-700 mb-1">
-                    Password Baru
-                  </label>
-                  <div className="relative">
-                    <input
-                      type={showPassword ? 'text' : 'password'}
-                      id="password"
-                      className="w-full px-4 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50"
-                      placeholder="Masukkan password baru"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      required
-                      minLength={8}
-                      disabled={loading}
-                    />
-                    <button
-                      type="button"
-                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-neutral-500"
-                      onClick={() => setShowPassword(!showPassword)}
-                      tabIndex={-1}
-                    >
-                      {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                    </button>
-                  </div>
-                  <div className="mt-2 text-xs text-neutral-500">
-                    <p>Password harus mengandung:</p>
-                    <ul className="list-disc list-inside mt-1 space-y-1">
-                      <li>Minimal 8 karakter</li>
-                      <li>Huruf besar dan kecil</li>
-                      <li>Minimal 1 angka</li>
-                    </ul>
-                  </div>
-                </div>
-                
-                <div className="mb-6">
-                  <label htmlFor="confirmPassword" className="block text-sm font-medium text-neutral-700 mb-1">
-                    Konfirmasi Password Baru
-                  </label>
-                  <div className="relative">
-                    <input
-                      type={showConfirmPassword ? 'text' : 'password'}
-                      id="confirmPassword"
-                      className="w-full px-4 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50"
-                      placeholder="Konfirmasi password baru"
-                      value={confirmPassword}
-                      onChange={(e) => setConfirmPassword(e.target.value)}
-                      required
-                      disabled={loading}
-                    />
-                    <button
-                      type="button"
-                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-neutral-500"
-                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                      tabIndex={-1}
-                    >
-                      {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                    </button>
-                  </div>
-                </div>
-                
-                <button
-                  type="submit"
-                  className="w-full btn-primary py-2.5 disabled:opacity-50 disabled:cursor-not-allowed"
-                  disabled={loading}
-                >
-                  {loading ? 'Memproses...' : 'Reset Password'}
-                </button>
-              </form>
-              
-              <div className="mt-6 text-center">
-                <Link to="/login" className="text-primary hover:underline">
-                  Kembali ke Halaman Masuk
-                </Link>
-              </div>
+      <div className="max-w-md w-full bg-white rounded-lg shadow-md p-8">
+        <div className="text-center mb-8">
+          <h1 className="text-3xl font-bold text-neutral-900 mb-2">Reset Password</h1>
+          <p className="text-neutral-600">
+            Buat password baru untuk akun Anda
+          </p>
+        </div>
+        
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <div>
+            <label htmlFor="password" className="block text-sm font-medium text-neutral-700 mb-1">
+              Password Baru
+            </label>
+            <div className="relative">
+              <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-neutral-500 h-5 w-5" />
+              <input
+                id="password"
+                name="password"
+                type={showPassword ? 'text' : 'password'}
+                autoComplete="new-password"
+                required
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="w-full pl-10 pr-10 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50"
+                placeholder="Masukkan password baru"
+                disabled={isSubmitting}
+              />
+              <button
+                type="button"
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-neutral-500"
+                onClick={() => setShowPassword(!showPassword)}
+              >
+                {showPassword ? (
+                  <EyeOff className="h-5 w-5" />
+                ) : (
+                  <Eye className="h-5 w-5" />
+                )}
+              </button>
+            </div>
+            <p className="mt-1 text-sm text-neutral-500">
+              Minimal 6 karakter
+            </p>
+          </div>
+
+          <div>
+            <label htmlFor="confirmPassword" className="block text-sm font-medium text-neutral-700 mb-1">
+              Konfirmasi Password
+            </label>
+            <div className="relative">
+              <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-neutral-500 h-5 w-5" />
+              <input
+                id="confirmPassword"
+                name="confirmPassword"
+                type={showConfirmPassword ? 'text' : 'password'}
+                autoComplete="new-password"
+                required
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                className="w-full pl-10 pr-10 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50"
+                placeholder="Konfirmasi password baru"
+                disabled={isSubmitting}
+              />
+              <button
+                type="button"
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-neutral-500"
+                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+              >
+                {showConfirmPassword ? (
+                  <EyeOff className="h-5 w-5" />
+                ) : (
+                  <Eye className="h-5 w-5" />
+                )}
+              </button>
             </div>
           </div>
+
+          <div>
+            <button
+              type="submit"
+              disabled={isSubmitting}
+              className="w-full flex justify-center py-2 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-primary hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isSubmitting ? (
+                <>
+                  <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Memproses...
+                </>
+              ) : (
+                'Reset Password'
+              )}
+            </button>
+          </div>
+        </form>
+
+        <div className="mt-6 text-center">
+          <p className="text-sm text-neutral-600">
+            Ingat password Anda?{' '}
+            <Link to="/login" className="text-primary hover:text-primary/80 font-medium">
+              Masuk
+            </Link>
+          </p>
         </div>
       </div>
-    </Layout>
+    </div>
   );
 };
 

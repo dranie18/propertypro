@@ -1,117 +1,108 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Facebook, Twitter, Instagram, Linkedin, Mail, Phone, MapPin } from 'lucide-react';
+import { Home, Mail, Phone, MapPin } from 'lucide-react';
 
 const Footer: React.FC = () => {
   return (
-    <footer className="bg-accent text-white pt-12 pb-6">
-      <div className="container mx-auto px-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+    <footer className="bg-neutral-800 text-white">
+      <div className="container mx-auto px-4 py-8">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           <div>
-            <h3 className="font-heading font-bold text-xl mb-4">
-              <span className="text-primary">Properti</span> Pro
-            </h3>
-            <p className="mb-4 text-neutral-300">
-              Platform jual beli dan sewa properti terpercaya di Indonesia dengan beragam pilihan properti berkualitas.
-            </p>
-            <div className="flex space-x-4">
-              <a href="https://facebook.com/propertipro" className="text-white hover:text-primary transition-colors" aria-label="Facebook">
-                <Facebook size={20} />
-              </a>
-              <a href="https://twitter.com/propertipro" className="text-white hover:text-primary transition-colors" aria-label="Twitter">
-                <Twitter size={20} />
-              </a>
-              <a href="https://instagram.com/propertipro" className="text-white hover:text-primary transition-colors" aria-label="Instagram">
-                <Instagram size={20} />
-              </a>
-              <a href="https://linkedin.com/company/propertipro" className="text-white hover:text-primary transition-colors" aria-label="LinkedIn">
-                <Linkedin size={20} />
-              </a>
+            <div className="flex items-center mb-4">
+              <Home className="h-8 w-8 text-primary" />
+              <span className="ml-2 text-xl font-bold">
+                Real<span className="text-primary">Estate</span>
+              </span>
             </div>
+            <p className="text-neutral-400 mb-4">
+              Platform manajemen properti terpercaya untuk jual beli dan sewa properti di Indonesia.
+            </p>
           </div>
-
+          
           <div>
-            <h4 className="font-heading font-semibold text-lg mb-4">Properti</h4>
-            <ul className="space-y-2 text-neutral-300">
+            <h3 className="text-lg font-semibold mb-4">Properti</h3>
+            <ul className="space-y-2">
               <li>
-                <Link to="/jual/rumah" className="hover:text-primary transition-colors">Rumah Dijual</Link>
+                <Link to="/listings" className="text-neutral-400 hover:text-primary">
+                  Semua Properti
+                </Link>
               </li>
               <li>
-                <Link to="/sewa/rumah" className="hover:text-primary transition-colors">Rumah Disewa</Link>
+                <Link to="/listings?property_type=rumah" className="text-neutral-400 hover:text-primary">
+                  Rumah
+                </Link>
               </li>
               <li>
-                <Link to="/jual/apartemen" className="hover:text-primary transition-colors">Apartemen Dijual</Link>
+                <Link to="/listings?property_type=apartemen" className="text-neutral-400 hover:text-primary">
+                  Apartemen
+                </Link>
               </li>
               <li>
-                <Link to="/sewa/apartemen" className="hover:text-primary transition-colors">Apartemen Disewa</Link>
+                <Link to="/listings?property_type=ruko" className="text-neutral-400 hover:text-primary">
+                  Ruko
+                </Link>
               </li>
               <li>
-                <Link to="/jual/tanah" className="hover:text-primary transition-colors">Tanah Dijual</Link>
-              </li>
-              <li>
-                <Link to="/jual/ruko" className="hover:text-primary transition-colors">Ruko Dijual</Link>
-              </li>
-              <li>
-                <Link to="/premium/features" className="hover:text-primary transition-colors">Premium Listings</Link>
+                <Link to="/listings?property_type=tanah" className="text-neutral-400 hover:text-primary">
+                  Tanah
+                </Link>
               </li>
             </ul>
           </div>
-
+          
           <div>
-            <h4 className="font-heading font-semibold text-lg mb-4">Perusahaan</h4>
-            <ul className="space-y-2 text-neutral-300">
+            <h3 className="text-lg font-semibold mb-4">Akun</h3>
+            <ul className="space-y-2">
               <li>
-                <Link to="/tentang-kami" className="hover:text-primary transition-colors">Tentang Kami</Link>
+                <Link to="/login" className="text-neutral-400 hover:text-primary">
+                  Masuk
+                </Link>
               </li>
               <li>
-                <Link to="/karir" className="hover:text-primary transition-colors">Karir</Link>
+                <Link to="/register" className="text-neutral-400 hover:text-primary">
+                  Daftar
+                </Link>
               </li>
               <li>
-                <Link to="/hubungi-kami" className="hover:text-primary transition-colors">Hubungi Kami</Link>
+                <Link to="/my-listings" className="text-neutral-400 hover:text-primary">
+                  Properti Saya
+                </Link>
               </li>
               <li>
-                <Link to="/kebijakan-privasi" className="hover:text-primary transition-colors">Kebijakan Privasi</Link>
-              </li>
-              <li>
-                <Link to="/syarat-ketentuan" className="hover:text-primary transition-colors">Syarat & Ketentuan</Link>
-              </li>
-              <li>
-                <Link to="/faq" className="hover:text-primary transition-colors">FAQ</Link>
+                <Link to="/listings/create" className="text-neutral-400 hover:text-primary">
+                  Tambah Properti
+                </Link>
               </li>
             </ul>
           </div>
-
+          
           <div>
-            <h4 className="font-heading font-semibold text-lg mb-4">Kontak</h4>
-            <ul className="space-y-3 text-neutral-300">
-              <li className="flex items-start space-x-3">
-                <MapPin size={20} className="flex-shrink-0 mt-0.5" />
-                <span>Jl. Sudirman No. 123, Jakarta Pusat, DKI Jakarta 10270</span>
+            <h3 className="text-lg font-semibold mb-4">Kontak</h3>
+            <ul className="space-y-3">
+              <li className="flex items-start">
+                <MapPin className="h-5 w-5 text-primary mr-2 mt-0.5" />
+                <span className="text-neutral-400">
+                  Jl. Sudirman No. 123, Jakarta Pusat, DKI Jakarta 10270
+                </span>
               </li>
-              <li className="flex items-center space-x-3">
-                <Phone size={20} className="flex-shrink-0" />
-                <a href="tel:+6221123456789" className="hover:text-primary transition-colors">+62 21 1234 5678</a>
+              <li className="flex items-center">
+                <Phone className="h-5 w-5 text-primary mr-2" />
+                <a href="tel:+6281234567890" className="text-neutral-400 hover:text-primary">
+                  +62 812 3456 7890
+                </a>
               </li>
-              <li className="flex items-center space-x-3">
-                <Mail size={20} className="flex-shrink-0" />
-                <a href="mailto:info@propertipro.id" className="hover:text-primary transition-colors">info@propertipro.id</a>
+              <li className="flex items-center">
+                <Mail className="h-5 w-5 text-primary mr-2" />
+                <a href="mailto:info@realestate.com" className="text-neutral-400 hover:text-primary">
+                  info@realestate.com
+                </a>
               </li>
             </ul>
           </div>
         </div>
-
-        <hr className="border-neutral-700 my-6" />
-
-        <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4">
-          <div className="text-neutral-400 text-sm">
-            &copy; {new Date().getFullYear()} Properti Pro. Hak Cipta Dilindungi.
-          </div>
-          <div className="flex flex-wrap gap-4 text-sm text-neutral-400">
-            <Link to="/sitemap" className="hover:text-primary transition-colors">Sitemap</Link>
-            <Link to="/user/dashboard" className="hover:text-primary transition-colors">User Dashboard</Link>
-            <Link to="/dashboard" className="hover:text-primary transition-colors">Agent Dashboard</Link>
-            <Link to="/admin/login" className="hover:text-primary transition-colors">Admin Login</Link>
-          </div>
+        
+        <div className="border-t border-neutral-700 mt-8 pt-6 text-center text-neutral-400 text-sm">
+          <p>&copy; {new Date().getFullYear()} Real Estate Management. All rights reserved.</p>
         </div>
       </div>
     </footer>
