@@ -12,29 +12,10 @@ import {
 } from 'lucide-react';
 import { Helmet } from 'react-helmet-async';
 import { provinces, cities, districts } from '../../data/locations';
-import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
-
-interface ListingFormData {
-  title: string;
-  description: string;
-  propertyType: 'rumah' | 'apartemen' | 'ruko' | 'tanah';
-  purpose: 'jual' | 'sewa';
-  price: number;
-  priceUnit: 'juta' | 'miliar';
-  bedrooms: number;
-  bathrooms: number;
-  buildingSize: number;
-  landSize: number;
-  province: string;
-  city: string;
-  district: string;
-  address: string;
-  features: string[];
-  images: string[];
-  makePremium: boolean;
-}
+import { ListingFormData } from '../../types/listing';
+import { listingService } from '../../services/listingService';
 
 const AddEditListing: React.FC = () => {
   const { id } = useParams();
@@ -78,63 +59,37 @@ const AddEditListing: React.FC = () => {
   const fetchListing = async (listingId: string) => {
     setIsLoading(true);
     try {
-      const { data, error } = await supabase
-        .from('listings')
-        .select('*')
-        .eq('id', listingId)
-        .single();
-
-      if (error) {
-        throw error;
+      const property = await listingService.getListingById(listingId);
+      
+      if (!property) {
+        throw new Error('Property not found');
       }
 
-      if (data) {
-        // Parse location data
-        const locationParts = data.location.split(', ');
-        const districtName = locationParts[0] || '';
-        const cityName = locationParts[1] || '';
-        const provinceName = locationParts[2] || '';
+      // Find location IDs from names
+      const provinceId = provinces.find(p => p.name === property.location.province)?.id || '';
+      const cityId = cities.find(c => c.name === property.location.city && c.provinceId === provinceId)?.id || '';
+      const districtId = districts.find(d => d.name === property.location.district && d.cityId === cityId)?.id || '';
 
-        // Find IDs from names
-        const provinceId = provinces.find(p => p.name === provinceName)?.id || '';
-        const cityId = cities.find(c => c.name === cityName && c.provinceId === provinceId)?.id || '';
-        const districtId = districts.find(d => d.name === districtName && d.cityId === cityId)?.id || '';
-
-        // Convert property data to form data
-        setFormData({
-          title: data.title,
-          description: data.description,
-          propertyType: data.property_type,
-          purpose: data.status === 'tersedia' ? 'jual' : 'sewa', // Map status to purpose
-          price: parseFloat(data.price),
-          priceUnit: parseFloat(data.price) >= 1000 ? 'miliar' : 'juta',
-          bedrooms: data.bedrooms || 0,
-          bathrooms: data.bathrooms || 0,
-          buildingSize: data.square_meters,
-          landSize: data.land_size || 0,
-          province: provinceId,
-          city: cityId,
-          district: districtId,
-          address: data.address || '',
-          features: data.features || [],
-          images: [], // We'll need to fetch images separately
-          makePremium: false
-        });
-
-        // Fetch property media (images)
-        const { data: mediaData, error: mediaError } = await supabase
-          .from('property_media')
-          .select('*')
-          .eq('listing_id', listingId)
-          .order('is_primary', { ascending: false });
-
-        if (!mediaError && mediaData) {
-          setFormData(prev => ({
-            ...prev,
-            images: mediaData.map(item => item.media_url)
-          }));
-        }
-      }
+      // Convert property data to form data
+      setFormData({
+        title: property.title,
+        description: property.description,
+        propertyType: property.type,
+        purpose: property.purpose,
+        price: property.price,
+        priceUnit: property.priceUnit,
+        bedrooms: property.bedrooms || 0,
+        bathrooms: property.bathrooms || 0,
+        buildingSize: property.buildingSize || 0,
+        landSize: property.landSize || 0,
+        province: provinceId,
+        city: cityId,
+        district: districtId,
+        address: property.location.address,
+        features: property.features,
+        images: property.images,
+        makePremium: false
+      });
     } catch (error) {
       console.error('Error fetching listing:', error);
       showError('Error', 'Failed to load property data. Please try again.');
@@ -223,86 +178,34 @@ const AddEditListing: React.FC = () => {
     setIsLoading(true);
 
     try {
-      // Get location names from IDs
-      const province = provinces.find(p => p.id === formData.province)?.name || '';
-      const city = cities.find(c => c.id === formData.city)?.name || '';
-      const district = districts.find(d => d.id === formData.district)?.name || '';
+      let listingId: string | null;
       
-      // Format location string
-      const location = `${district}, ${city}, ${province}`;
-      
-      // Prepare listing data
-      const listingData = {
-        title: formData.title,
-        description: formData.description,
-        price: formData.price,
-        location: location,
-        property_type: formData.propertyType,
-        status: 'tersedia', // Default status
-        square_meters: formData.buildingSize,
-        bedrooms: formData.bedrooms || null,
-        bathrooms: formData.bathrooms || null,
-        features: formData.features,
-        address: formData.address,
-        land_size: formData.landSize || null,
-        user_id: user.id
-      };
-
-      let listingId = id;
-      
-      if (isEdit) {
+      if (isEdit && id) {
         // Update existing listing
-        const { error } = await supabase
-          .from('listings')
-          .update(listingData)
-          .eq('id', id);
-
-        if (error) throw error;
+        const success = await listingService.updateListing(id, formData, user.id);
+        if (!success) {
+          throw new Error('Failed to update listing');
+        }
+        listingId = id;
+        
+        showSuccess(
+          'Listing Updated', 
+          'Your property listing has been updated successfully.'
+        );
       } else {
-        // Insert new listing
-        const { data, error } = await supabase
-          .from('listings')
-          .insert(listingData)
-          .select('id')
-          .single();
-
-        if (error) throw error;
-        listingId = data.id;
-      }
-
-      // Handle images
-      if (listingId) {
-        // If editing, first delete existing images
-        if (isEdit) {
-          await supabase
-            .from('property_media')
-            .delete()
-            .eq('listing_id', listingId);
+        // Create new listing
+        listingId = await listingService.createListing(formData, user.id);
+        if (!listingId) {
+          throw new Error('Failed to create listing');
         }
         
-        // Insert new images
-        const mediaInserts = formData.images.map((url, index) => ({
-          listing_id: listingId,
-          media_url: url,
-          media_type: 'photo',
-          is_primary: index === 0 // First image is primary
-        }));
-        
-        if (mediaInserts.length > 0) {
-          const { error: mediaError } = await supabase
-            .from('property_media')
-            .insert(mediaInserts);
-            
-          if (mediaError) throw mediaError;
-        }
+        showSuccess(
+          'Listing Created', 
+          'Your property listing has been created successfully and is pending review.'
+        );
       }
-
-      showSuccess(
-        isEdit ? 'Listing Updated' : 'Listing Created',
-        isEdit ? 'Your property listing has been updated successfully.' : 'Your property listing has been created successfully.'
-      );
       
-      if (formData.makePremium) {
+      if (formData.makePremium && listingId) {
         // Redirect to premium upgrade
         navigate(`/premium/upgrade?propertyId=${listingId}`);
       } else {
@@ -385,8 +288,12 @@ const AddEditListing: React.FC = () => {
               >
                 <option value="rumah">Rumah</option>
                 <option value="apartemen">Apartemen</option>
+                <option value="kondominium">Kondominium</option>
                 <option value="ruko">Ruko</option>
+                <option value="gedung_komersial">Gedung Komersial</option>
+                <option value="ruang_industri">Ruang Industri</option>
                 <option value="tanah">Tanah</option>
+                <option value="lainnya">Lainnya</option>
               </select>
             </div>
 
