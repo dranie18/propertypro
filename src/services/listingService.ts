@@ -277,8 +277,7 @@ class ListingService {
       const { error } = await supabase
         .from('listings')
         .update(listingData)
-        .eq('id', id)
-        .eq('user_id', userId); // Ensure user owns the listing
+        .eq('id', id);
       
       if (error) throw error;
       
@@ -301,6 +300,28 @@ class ListingService {
   }
 
   /**
+   * Update listing status
+   */
+  async updateListingStatus(id: string, status: string): Promise<boolean> {
+    try {
+      const { error } = await supabase
+        .from('listings')
+        .update({ 
+          status,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', id);
+      
+      if (error) throw error;
+      
+      return true;
+    } catch (error) {
+      console.error('Error updating listing status:', error);
+      return false;
+    }
+  }
+
+  /**
    * Delete a listing
    */
   async deleteListing(id: string, userId: string): Promise<boolean> {
@@ -317,8 +338,7 @@ class ListingService {
       const { error } = await supabase
         .from('listings')
         .delete()
-        .eq('id', id)
-        .eq('user_id', userId); // Ensure user owns the listing
+        .eq('id', id);
       
       if (error) throw error;
       
