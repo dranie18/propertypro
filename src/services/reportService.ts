@@ -1,5 +1,6 @@
 import { supabase } from '../lib/supabase';
 import { Report, ModerationAction, ModerationStats } from '../types/admin';
+import { mockReports } from '../data/reports';
 
 class ReportService {
   /**
@@ -122,7 +123,7 @@ class ReportService {
       return reports;
     } catch (error) {
       console.error('Error fetching reports:', error);
-      return [];
+      return mockReports;
     }
   }
 
@@ -217,6 +218,48 @@ class ReportService {
       };
     } catch (error) {
       console.error('Error fetching report:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Create a new report
+   */
+  async createReport(reportData: {
+    propertyId: string;
+    reporterId?: string;
+    reporterName: string;
+    reporterEmail: string;
+    type: string;
+    reason: string;
+    description?: string;
+    priority?: string;
+  }): Promise<Report | null> {
+    try {
+      const { data, error } = await supabase
+        .from('reports')
+        .insert({
+          property_id: reportData.propertyId,
+          reporter_id: reportData.reporterId || null,
+          reporter_name: reportData.reporterName,
+          reporter_email: reportData.reporterEmail,
+          type: reportData.type,
+          reason: reportData.reason,
+          description: reportData.description || null,
+          priority: reportData.priority || 'medium',
+          status: 'pending',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        })
+        .select()
+        .single();
+      
+      if (error) throw error;
+      
+      // Get the full report with property details
+      return this.getReportById(data.id);
+    } catch (error) {
+      console.error('Error creating report:', error);
       return null;
     }
   }
@@ -495,7 +538,6 @@ class ReportService {
       // Get reports by type
       const { data: reportsByTypeData } = await supabase
         .from('reports')
-        .select('type, count')
         .select('type')
         .order('type');
       
