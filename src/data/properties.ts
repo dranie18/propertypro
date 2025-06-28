@@ -39,7 +39,7 @@ export const properties: Property[] = [
     isPromoted: true,
   },
   {
-    id: 'b2c3d4e5-f6a7-4901-a345-678901bcdefg',
+    id: 'b2c3d4e5-f6a7-4901-a345-678901bcdef0',
     title: 'Apartemen Studio di Pusat Kota Jakarta',
     description: 'Apartemen studio modern di pusat kota Jakarta. Akses mudah ke berbagai fasilitas seperti mall, rumah sakit, dan transportasi umum.',
     price: 800,
@@ -74,7 +74,7 @@ export const properties: Property[] = [
     isPromoted: true,
   },
   {
-    id: 'c3d4e5f6-a7b8-4012-b456-789012cdefgh',
+    id: 'c3d4e5f6-a7b8-4012-b456-789012cdef01',
     title: 'Ruko 3 Lantai di Kelapa Gading',
     description: 'Ruko strategis di kawasan bisnis Kelapa Gading. Cocok untuk berbagai jenis usaha dan kantor.',
     price: 4.7,
@@ -109,7 +109,7 @@ export const properties: Property[] = [
     isPromoted: false,
   },
   {
-    id: 'd4e5f6a7-b8c9-4123-c567-890123defghi',
+    id: 'd4e5f6a7-b8c9-4123-c567-890123defab2',
     title: 'Rumah Mewah di Pondok Indah',
     description: 'Rumah mewah dengan desain modern di kawasan elit Pondok Indah. Dilengkapi dengan kolam renang dan taman yang luas.',
     price: 15,
@@ -145,7 +145,7 @@ export const properties: Property[] = [
     isPromoted: true,
   },
   {
-    id: 'e5f6a7b8-c9d0-4234-d678-901234efghij',
+    id: 'e5f6a7b8-c9d0-4234-d678-901234efabc3',
     title: 'Tanah Komersial di Bandung',
     description: 'Tanah luas cocok untuk pembangunan hotel, mall, atau apartemen di kawasan berkembang Bandung.',
     price: 12,
@@ -177,7 +177,7 @@ export const properties: Property[] = [
     isPromoted: false,
   },
   {
-    id: 'f6a7b8c9-d0e1-4345-e789-012345fghijk',
+    id: 'f6a7b8c9-d0e1-4345-e789-012345fabc45',
     title: 'Apartemen 2BR di Kemang Village',
     description: 'Apartemen mewah 2 kamar tidur fully furnished di Kemang Village. Akses langsung ke mall dan fasilitas lengkap.',
     price: 3.5,
