@@ -2,7 +2,7 @@ import { Property } from '../types';
 
 export const properties: Property[] = [
   {
-    id: 'a1b2c3d4-e5f6-7890-1234-567890abcdef',
+    id: 'a1b2c3d4-e5f6-4890-b234-567890abcdef',
     title: 'Rumah Minimalis 2 Lantai di Bintaro',
     description: 'Rumah baru dengan desain minimalis modern, lokasi strategis dekat dengan pusat perbelanjaan dan sekolah. Lingkungan aman dan nyaman untuk keluarga.',
     price: 2.5,
@@ -39,7 +39,7 @@ export const properties: Property[] = [
     isPromoted: true,
   },
   {
-    id: 'b2c3d4e5-f6g7-8901-2345-678901bcdefg',
+    id: 'b2c3d4e5-f6a7-4901-a345-678901bcdefg',
     title: 'Apartemen Studio di Pusat Kota Jakarta',
     description: 'Apartemen studio modern di pusat kota Jakarta. Akses mudah ke berbagai fasilitas seperti mall, rumah sakit, dan transportasi umum.',
     price: 800,
@@ -74,7 +74,7 @@ export const properties: Property[] = [
     isPromoted: true,
   },
   {
-    id: 'c3d4e5f6-g7h8-9012-3456-789012cdefgh',
+    id: 'c3d4e5f6-a7b8-4012-b456-789012cdefgh',
     title: 'Ruko 3 Lantai di Kelapa Gading',
     description: 'Ruko strategis di kawasan bisnis Kelapa Gading. Cocok untuk berbagai jenis usaha dan kantor.',
     price: 4.7,
@@ -109,7 +109,7 @@ export const properties: Property[] = [
     isPromoted: false,
   },
   {
-    id: 'd4e5f6g7-h8i9-0123-4567-890123defghi',
+    id: 'd4e5f6a7-b8c9-4123-c567-890123defghi',
     title: 'Rumah Mewah di Pondok Indah',
     description: 'Rumah mewah dengan desain modern di kawasan elit Pondok Indah. Dilengkapi dengan kolam renang dan taman yang luas.',
     price: 15,
@@ -145,7 +145,7 @@ export const properties: Property[] = [
     isPromoted: true,
   },
   {
-    id: 'e5f6g7h8-i9j0-1234-5678-901234efghij',
+    id: 'e5f6a7b8-c9d0-4234-d678-901234efghij',
     title: 'Tanah Komersial di Bandung',
     description: 'Tanah luas cocok untuk pembangunan hotel, mall, atau apartemen di kawasan berkembang Bandung.',
     price: 12,
@@ -177,7 +177,7 @@ export const properties: Property[] = [
     isPromoted: false,
   },
   {
-    id: 'f6g7h8i9-j0k1-2345-6789-012345fghijk',
+    id: 'f6a7b8c9-d0e1-4345-e789-012345fghijk',
     title: 'Apartemen 2BR di Kemang Village',
     description: 'Apartemen mewah 2 kamar tidur fully furnished di Kemang Village. Akses langsung ke mall dan fasilitas lengkap.',
     price: 3.5,
