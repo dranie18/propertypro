@@ -11,8 +11,23 @@ interface PropertyCardProps {
 }
 
 const PropertyCard: React.FC<PropertyCardProps> = ({ property }) => {
-  // Check if this property has premium listing
-  const premiumListing = premiumService.getPremiumListing(property.id);
+  const [premiumListing, setPremiumListing] = React.useState<any>(null);
+  const [isLoading, setIsLoading] = React.useState(true);
+
+  React.useEffect(() => {
+    const checkPremiumStatus = async () => {
+      try {
+        const premium = await premiumService.getPremiumListing(property.id);
+        setPremiumListing(premium);
+      } catch (error) {
+        console.error('Error checking premium status:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    checkPremiumStatus();
+  }, [property.id]);
 
   const handleAnalyticsUpdate = (type: 'view' | 'inquiry' | 'favorite') => {
     if (premiumListing) {

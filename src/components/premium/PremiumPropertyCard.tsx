@@ -5,6 +5,7 @@ import { Property } from '../../types';
 import { PremiumListing } from '../../types/premium';
 import { formatPrice } from '../../utils/formatter';
 import PremiumBadge from './PremiumBadge';
+import { premiumService } from '../../services/premiumService';
 
 interface PremiumPropertyCardProps {
   property: Property;
@@ -34,16 +35,29 @@ const PremiumPropertyCard: React.FC<PremiumPropertyCardProps> = ({
   const isPremium = !!premiumListing;
 
   const handleCardClick = () => {
-    if (onAnalyticsUpdate) {
-      onAnalyticsUpdate('view');
+    if (isPremium) {
+      // Update analytics in Supabase
+      premiumService.updateAnalytics(id, 'view');
+      
+      // Call the callback if provided
+      if (onAnalyticsUpdate) {
+        onAnalyticsUpdate('view');
+      }
     }
   };
 
   const handleFavoriteClick = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    if (onAnalyticsUpdate) {
-      onAnalyticsUpdate('favorite');
+    
+    if (isPremium) {
+      // Update analytics in Supabase
+      premiumService.updateAnalytics(id, 'favorite');
+      
+      // Call the callback if provided
+      if (onAnalyticsUpdate) {
+        onAnalyticsUpdate('favorite');
+      }
     }
   };
 

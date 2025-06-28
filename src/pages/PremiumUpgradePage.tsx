@@ -8,11 +8,15 @@ import { Helmet } from 'react-helmet-async';
 import { BillingDetails } from '../types/premium';
 import { premiumService } from '../services/premiumService';
 import { midtransService } from '../services/midtrans';
+import { useAuth } from '../contexts/AuthContext';
+import { useToast } from '../contexts/ToastContext';
 
 const PremiumUpgradePage: React.FC = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const propertyId = searchParams.get('propertyId');
+  const { user } = useAuth();
+  const { showError } = useToast();
   
   const [currentStep, setCurrentStep] = useState<'comparison' | 'payment' | 'processing' | 'success'>('comparison');
   const [isLoading, setIsLoading] = useState(false);
@@ -26,7 +30,12 @@ const PremiumUpgradePage: React.FC = () => {
 
   const handlePaymentSubmit = async (billingDetails: BillingDetails) => {
     if (!propertyId) {
-      alert('Property ID is required');
+      showError('Error', 'Property ID is required');
+      return;
+    }
+
+    if (!user) {
+      showError('Error', 'You must be logged in to upgrade to premium');
       return;
     }
 
@@ -34,14 +43,24 @@ const PremiumUpgradePage: React.FC = () => {
     setCurrentStep('processing');
 
     try {
+      // Add user ID to billing details
+      const billingWithUser = {
+        ...billingDetails,
+        userId: user.id
+      };
+
       // Create payment record
       const orderId = `premium-${propertyId}-${Date.now()}`;
       const payment = await premiumService.createPayment({
         orderId,
         amount: premiumPlan.price,
         currency: premiumPlan.currency,
-        billingDetails
+        billingDetails: billingWithUser
       });
+
+      if (!payment) {
+        throw new Error('Failed to create payment record');
+      }
 
       // Create Midtrans transaction
       const midtransResponse = await midtransService.createTransaction({
@@ -66,7 +85,7 @@ const PremiumUpgradePage: React.FC = () => {
         // Create premium listing
         await premiumService.createPremiumListing({
           propertyId,
-          userId: 'current-user-id', // In real app, get from auth context
+          userId: user.id,
           planId: premiumPlan.id,
           paymentId: payment.id
         });
@@ -75,16 +94,16 @@ const PremiumUpgradePage: React.FC = () => {
         setCurrentStep('success');
       } else if (paymentResult.status === 'pending') {
         await premiumService.updatePaymentStatus(payment.id, 'pending');
-        alert('Payment is being processed. You will receive a confirmation email shortly.');
+        showError('Payment Pending', 'Your payment is being processed. You will receive a confirmation email shortly.');
         navigate('/dashboard/premium');
       } else {
         await premiumService.updatePaymentStatus(payment.id, 'failed');
-        alert('Payment failed. Please try again.');
+        showError('Payment Failed', 'Your payment could not be processed. Please try again.');
         setCurrentStep('payment');
       }
     } catch (error) {
       console.error('Payment error:', error);
-      alert('Payment processing failed. Please try again.');
+      showError('Payment Error', 'An error occurred while processing your payment. Please try again.');
       setCurrentStep('payment');
     } finally {
       setIsLoading(false);

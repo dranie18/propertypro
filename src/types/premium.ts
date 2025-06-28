@@ -140,6 +140,10 @@ export interface BillingDetails {
   postalCode: string;
   /** Country code */
   country: string;
+  /** User ID (optional) */
+  userId?: string;
+  /** Company name (optional) */
+  company?: string;
 }
 
 /**
