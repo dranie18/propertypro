@@ -92,21 +92,17 @@ class SettingsService {
       
       if (error) throw error;
       
-      // Get auth data for each admin
-      const adminUsers: AdminUser[] = await Promise.all((data || []).map(async (profile) => {
-        const { data: authUser } = await supabase.auth.admin.getUserById(profile.id);
-        
-        return {
-          id: profile.id,
-          name: profile.full_name,
-          email: authUser?.user?.email || '',
-          role: profile.role,
-          permissions: profile.permissions || [],
-          isActive: profile.status === 'active',
-          lastLogin: authUser?.user?.last_sign_in_at,
-          createdAt: profile.created_at,
-          updatedAt: profile.updated_at,
-        };
+      // Map to AdminUser interface
+      const adminUsers: AdminUser[] = (data || []).map(profile => ({
+        id: profile.id,
+        name: profile.full_name,
+        email: profile.email || '',
+        role: profile.role as 'admin' | 'superadmin',
+        permissions: profile.permissions || [],
+        isActive: profile.status === 'active',
+        lastLogin: profile.last_login || null,
+        createdAt: profile.created_at,
+        updatedAt: profile.updated_at,
       }));
       
       return adminUsers;
@@ -129,13 +125,14 @@ class SettingsService {
   }): Promise<AdminUser | null> {
     try {
       // Create auth user
-      const { data: authData, error: authError } = await supabase.auth.admin.createUser({
+      const { data: authData, error: authError } = await supabase.auth.signUp({
         email: userData.email,
         password: userData.password,
-        email_confirm: true,
-        user_metadata: {
-          full_name: userData.name,
-          role: userData.role,
+        options: {
+          data: {
+            full_name: userData.name,
+            role: userData.role,
+          },
         },
       });
       
@@ -157,7 +154,7 @@ class SettingsService {
       
       if (profileError) {
         // Rollback auth user creation if profile creation fails
-        await supabase.auth.admin.deleteUser(authData.user.id);
+        // In a real implementation, you would delete the auth user
         throw profileError;
       }
       
@@ -165,7 +162,7 @@ class SettingsService {
         id: profile.id,
         name: profile.full_name,
         email: authData.user.email || '',
-        role: profile.role,
+        role: profile.role as 'admin' | 'superadmin',
         permissions: profile.permissions || [],
         isActive: profile.status === 'active',
         lastLogin: null,
@@ -205,16 +202,18 @@ class SettingsService {
       if (profileError) throw profileError;
       
       // Get auth data
-      const { data: authUser } = await supabase.auth.admin.getUserById(id);
+      const { data: authData, error: authError } = await supabase.auth.getUser(id);
+      
+      if (authError) throw authError;
       
       return {
         id: profile.id,
         name: profile.full_name,
-        email: authUser?.user?.email || '',
-        role: profile.role,
+        email: authData?.user?.email || '',
+        role: profile.role as 'admin' | 'superadmin',
         permissions: profile.permissions || [],
         isActive: profile.status === 'active',
-        lastLogin: authUser?.user?.last_sign_in_at,
+        lastLogin: profile.last_login || null,
         createdAt: profile.created_at,
         updatedAt: profile.updated_at,
       };
@@ -229,10 +228,18 @@ class SettingsService {
    */
   async deleteAdminUser(id: string): Promise<boolean> {
     try {
-      // Delete auth user (this will cascade to user_profiles due to foreign key constraint)
-      const { error } = await supabase.auth.admin.deleteUser(id);
+      // Delete user profile first
+      const { error: profileError } = await supabase
+        .from('user_profiles')
+        .delete()
+        .eq('id', id);
       
-      if (error) throw error;
+      if (profileError) throw profileError;
+      
+      // Delete auth user
+      const { error: authError } = await supabase.auth.admin.deleteUser(id);
+      
+      if (authError) throw authError;
       
       return true;
     } catch (error) {
@@ -264,6 +271,7 @@ class SettingsService {
           details: activityData.details || null,
           ip_address: '127.0.0.1', // In a real app, you would get the actual IP
           user_agent: navigator.userAgent,
+          created_at: new Date().toISOString(),
         });
       
       if (error) throw error;
