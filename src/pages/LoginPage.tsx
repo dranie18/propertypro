@@ -13,6 +13,10 @@ const LoginPage: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
   
+  // New state variables for validation errors
+  const [emailError, setEmailError] = useState('');
+  const [passwordError, setPasswordError] = useState('');
+  
   const { signIn, isAuthenticated, loading, error, clearError } = useAuth();
   const { showError, showSuccess } = useToast();
   const navigate = useNavigate();
@@ -70,15 +74,67 @@ const LoginPage: React.FC = () => {
     }
   }, [error, showError]);
 
+  // Email validation function
+  const validateEmail = (email: string): string => {
+    if (!email.trim()) {
+      return 'Email is required';
+    }
+    
+    // RFC 5322 compliant email regex
+    const emailRegex = /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
+    if (!emailRegex.test(email)) {
+      return 'Please enter a valid email address';
+    }
+    
+    return '';
+  };
+
+  // Password validation function
+  const validatePassword = (password: string): string => {
+    if (!password) {
+      return 'Password is required';
+    }
+    
+    if (password.length < 8) {
+      return 'Password must be at least 8 characters long';
+    }
+    
+    // Optional: Check for password complexity
+    // const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+    // if (!passwordRegex.test(password)) {
+    //   return 'Password must include uppercase, lowercase, number and special character';
+    // }
+    
+    return '';
+  };
+
+  // Handle email input change with validation
+  const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newEmail = e.target.value;
+    setEmail(newEmail);
+    setEmailError(validateEmail(newEmail));
+  };
+
+  // Handle password input change with validation
+  const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newPassword = e.target.value;
+    setPassword(newPassword);
+    setPasswordError(validatePassword(newPassword));
+  };
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Basic validation
-    if (!email.trim() || !password) {
-      showError(
-        authMessages.login.emptyFields.title,
-        authMessages.login.emptyFields.message
-      );
+    // Validate inputs before submission
+    const emailValidationError = validateEmail(email);
+    const passwordValidationError = validatePassword(password);
+    
+    // Update error states
+    setEmailError(emailValidationError);
+    setPasswordError(passwordValidationError);
+    
+    // If there are validation errors, don't proceed
+    if (emailValidationError || passwordValidationError) {
       return;
     }
     
@@ -99,9 +155,13 @@ const LoginPage: React.FC = () => {
     if (type === 'admin') {
       setEmail('admin@propertipro.id');
       setPassword('admin123');
+      setEmailError('');
+      setPasswordError('');
     } else {
       setEmail('superadmin@propertipro.id');
       setPassword('admin123');
+      setEmailError('');
+      setPasswordError('');
     }
   };
   
@@ -129,13 +189,20 @@ const LoginPage: React.FC = () => {
                   <input
                     type="email"
                     id="email"
-                    className="w-full px-4 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50"
+                    className={`w-full px-4 py-2 border ${emailError ? 'border-red-500' : 'border-neutral-300'} rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50`}
                     placeholder="Masukkan email Anda"
                     value={email}
-                    onChange={(e) => setEmail(e.target.value)}
+                    onChange={handleEmailChange}
                     required
                     disabled={loading}
+                    aria-invalid={!!emailError}
+                    aria-describedby={emailError ? "email-error" : undefined}
                   />
+                  {emailError && (
+                    <p id="email-error" className="mt-1 text-sm text-red-600">
+                      {emailError}
+                    </p>
+                  )}
                 </div>
                 
                 <div className="mb-4">
@@ -146,12 +213,14 @@ const LoginPage: React.FC = () => {
                     <input
                       type={showPassword ? 'text' : 'password'}
                       id="password"
-                      className="w-full px-4 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50"
+                      className={`w-full px-4 py-2 border ${passwordError ? 'border-red-500' : 'border-neutral-300'} rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50`}
                       placeholder="Masukkan password Anda"
                       value={password}
-                      onChange={(e) => setPassword(e.target.value)}
+                      onChange={handlePasswordChange}
                       required
                       disabled={loading}
+                      aria-invalid={!!passwordError}
+                      aria-describedby={passwordError ? "password-error" : undefined}
                     />
                     <button
                       type="button"
@@ -162,6 +231,11 @@ const LoginPage: React.FC = () => {
                       {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                     </button>
                   </div>
+                  {passwordError && (
+                    <p id="password-error" className="mt-1 text-sm text-red-600">
+                      {passwordError}
+                    </p>
+                  )}
                 </div>
                 
                 <div className="flex items-center justify-between mb-6">
@@ -186,7 +260,7 @@ const LoginPage: React.FC = () => {
                 <button
                   type="submit"
                   className="w-full btn-primary py-2.5 disabled:opacity-50 disabled:cursor-not-allowed"
-                  disabled={loading}
+                  disabled={loading || !!emailError || !!passwordError}
                 >
                   {loading ? 'Memproses...' : 'Masuk'}
                 </button>
