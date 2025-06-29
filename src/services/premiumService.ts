@@ -247,7 +247,7 @@ class PremiumService {
         .eq('property_id', propertyId)
         .eq('status', 'active')
         .gt('end_date', new Date().toISOString())
-        .single();
+        .maybeSingle();
 
       if (error) {
         if (error.code === 'PGRST116') {
