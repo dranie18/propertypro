@@ -375,12 +375,10 @@ class PremiumService {
         .gt('end_date', new Date().toISOString())
         .maybeSingle();
 
-      if (error) {
-        if (error.code === 'PGRST116') {
-          // No data found
-          return;
-        }
-        throw error;
+      if (error) throw error;
+
+      if (!data) {
+        return;
       }
 
       // Prepare updates based on the type
