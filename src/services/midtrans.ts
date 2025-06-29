@@ -29,40 +29,17 @@ class MidtransService {
     try {
       // In a real implementation, this would call your backend API
       // which then calls Midtrans API with server key
-      const response = await axios.post('/api/payments/create-transaction', {
-        transaction_details: {
-          order_id: paymentData.orderId,
-          gross_amount: paymentData.amount
-        },
-        customer_details: {
-          first_name: paymentData.billingDetails.firstName,
-          last_name: paymentData.billingDetails.lastName,
-          email: paymentData.billingDetails.email,
-          phone: paymentData.billingDetails.phone,
-          billing_address: {
-            first_name: paymentData.billingDetails.firstName,
-            last_name: paymentData.billingDetails.lastName,
-            address: paymentData.billingDetails.address,
-            city: paymentData.billingDetails.city,
-            postal_code: paymentData.billingDetails.postalCode,
-            country_code: paymentData.billingDetails.country
-          }
-        },
-        item_details: paymentData.itemDetails,
-        credit_card: {
-          secure: true
-        }
-      });
-
-      return response.data;
-    } catch (error) {
-      console.error('Midtrans transaction creation failed:', error);
+      // For now, we'll use a placeholder response for development
+      console.log('Creating Midtrans transaction:', paymentData);
       
-      // For demo purposes, return mock response
+      // Simulate API response
       return {
         token: 'demo-token-' + Date.now(),
         redirect_url: '#'
       };
+    } catch (error) {
+      console.error('Midtrans transaction creation failed:', error);
+      throw error;
     }
   }
 
@@ -111,17 +88,18 @@ class MidtransService {
   async checkTransactionStatus(orderId: string): Promise<any> {
     try {
       // In a real implementation, this would call your backend API
-      const response = await axios.get(`/api/payments/status/${orderId}`);
-      return response.data;
-    } catch (error) {
-      console.error('Failed to check transaction status:', error);
+      // For now, we'll use a placeholder response for development
+      console.log('Checking transaction status for order:', orderId);
       
-      // For demo purposes, return mock success
+      // Simulate API response
       return {
         transaction_status: 'settlement',
         payment_type: 'credit_card',
         transaction_time: new Date().toISOString()
       };
+    } catch (error) {
+      console.error('Failed to check transaction status:', error);
+      throw error;
     }
   }
 }

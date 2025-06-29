@@ -1,6 +1,5 @@
 import { supabase } from '../lib/supabase';
 import { Report, ModerationAction, ModerationStats } from '../types/admin';
-import { mockReports } from '../data/reports';
 
 class ReportService {
   /**
@@ -123,7 +122,7 @@ class ReportService {
       return reports;
     } catch (error) {
       console.error('Error fetching reports:', error);
-      return mockReports;
+      return [];
     }
   }
 

@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import Layout from '../components/layout/Layout';
-import { properties } from '../data/properties';
 import { Property } from '../types';
 import { 
   MapPin, 
@@ -19,25 +18,73 @@ import {
 } from 'lucide-react';
 import { formatPrice } from '../utils/formatter';
 import { Helmet } from 'react-helmet-async';
+import { listingService } from '../services/listingService';
+import { useToast } from '../contexts/ToastContext';
 
 const PropertyDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
+  const { showError } = useToast();
   const [property, setProperty] = useState<Property | null>(null);
   const [activeImage, setActiveImage] = useState<string>('');
   const [isContactFormVisible, setIsContactFormVisible] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [similarProperties, setSimilarProperties] = useState<Property[]>([]);
   
   useEffect(() => {
     if (id) {
-      const foundProperty = properties.find(p => p.id === id);
-      if (foundProperty) {
-        setProperty(foundProperty);
-        setActiveImage(foundProperty.images[0]);
-      }
+      fetchPropertyDetails(id);
     }
     
     // Scroll to top when navigating to a property detail
     window.scrollTo(0, 0);
   }, [id]);
+  
+  const fetchPropertyDetails = async (propertyId: string) => {
+    setIsLoading(true);
+    try {
+      // Fetch property details
+      const propertyData = await listingService.getListingById(propertyId);
+      
+      if (!propertyData) {
+        throw new Error('Property not found');
+      }
+      
+      setProperty(propertyData);
+      setActiveImage(propertyData.images[0]);
+      
+      // Increment view count
+      await listingService.incrementViewCount(propertyId);
+      
+      // Fetch similar properties
+      const { data: similarData } = await listingService.getAllListings({
+        type: propertyData.type,
+        purpose: propertyData.purpose,
+        status: 'active'
+      }, 1, 3);
+      
+      // Filter out the current property
+      const filteredSimilar = similarData.filter(p => p.id !== propertyId);
+      setSimilarProperties(filteredSimilar);
+      
+    } catch (error) {
+      console.error('Error fetching property details:', error);
+      showError('Error', 'Failed to load property details. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+  
+  if (isLoading) {
+    return (
+      <Layout>
+        <div className="container mx-auto px-4 py-12">
+          <div className="flex justify-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+          </div>
+        </div>
+      </Layout>
+    );
+  }
   
   if (!property) {
     return (
@@ -333,18 +380,12 @@ const PropertyDetailPage: React.FC = () => {
               </div>
               
               {/* Similar Properties */}
-              <div className="bg-white rounded-lg shadow-md p-6">
-                <h3 className="font-heading font-semibold text-lg mb-4">Properti Serupa</h3>
-                
-                <div className="space-y-4">
-                  {properties
-                    .filter(p => 
-                      p.id !== property.id && 
-                      p.type === property.type && 
-                      p.purpose === property.purpose
-                    )
-                    .slice(0, 3)
-                    .map(similarProperty => (
+              {similarProperties.length > 0 && (
+                <div className="bg-white rounded-lg shadow-md p-6">
+                  <h3 className="font-heading font-semibold text-lg mb-4">Properti Serupa</h3>
+                  
+                  <div className="space-y-4">
+                    {similarProperties.map(similarProperty => (
                       <Link 
                         key={similarProperty.id} 
                         to={`/properti/${similarProperty.id}`}
@@ -366,10 +407,10 @@ const PropertyDetailPage: React.FC = () => {
                           </p>
                         </div>
                       </Link>
-                    ))
-                  }
+                    ))}
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
           </div>
         </div>

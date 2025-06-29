@@ -3,15 +3,17 @@ import { useLocation, useParams } from 'react-router-dom';
 import Layout from '../components/layout/Layout';
 import PropertyCard from '../components/common/PropertyCard';
 import SearchBox from '../components/common/SearchBox';
-import { properties } from '../data/properties';
 import { Property } from '../types';
 import { premiumService } from '../services/premiumService';
 import { GridIcon, List, SortAsc } from 'lucide-react';
 import { Helmet } from 'react-helmet-async';
+import { listingService } from '../services/listingService';
+import { useToast } from '../contexts/ToastContext';
 
 const PropertyListingPage: React.FC = () => {
   const location = useLocation();
   const params = useParams();
+  const { showError } = useToast();
   const queryParams = new URLSearchParams(location.search);
   
   const purpose = params.purpose || queryParams.get('purpose') || 'jual';
@@ -20,65 +22,60 @@ const PropertyListingPage: React.FC = () => {
   const city = queryParams.get('city');
   const district = queryParams.get('district');
   
-  const [filteredProperties, setFilteredProperties] = useState<Property[]>([]);
+  const [properties, setProperties] = useState<Property[]>([]);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [sortBy, setSortBy] = useState<'newest' | 'price_asc' | 'price_desc' | 'premium'>('premium');
+  const [isLoading, setIsLoading] = useState(true);
+  const [totalCount, setTotalCount] = useState(0);
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 12;
   
   useEffect(() => {
-    let filtered = properties.filter(property => property.purpose === purpose);
-    
-    if (propertyType) {
-      filtered = filtered.filter(property => property.type === propertyType);
-    }
-    
-    if (province) {
-      filtered = filtered.filter(property => 
-        property.location.province.toLowerCase().includes(province.toLowerCase())
+    fetchProperties();
+  }, [purpose, propertyType, province, city, district, sortBy, currentPage]);
+  
+  const fetchProperties = async () => {
+    setIsLoading(true);
+    try {
+      // Prepare filters
+      const filters: any = {
+        purpose,
+        sortBy,
+        status: 'active'
+      };
+      
+      if (propertyType) {
+        filters.type = propertyType;
+      }
+      
+      if (province) {
+        filters.location = { province };
+      }
+      
+      if (city) {
+        filters.location = { ...filters.location, city };
+      }
+      
+      if (district) {
+        filters.location = { ...filters.location, district };
+      }
+      
+      // Fetch properties
+      const { data, count } = await listingService.getAllListings(
+        filters,
+        currentPage,
+        pageSize
       );
+      
+      setProperties(data);
+      setTotalCount(count);
+    } catch (error) {
+      console.error('Error fetching properties:', error);
+      showError('Error', 'Failed to load properties. Please try again.');
+    } finally {
+      setIsLoading(false);
     }
-    
-    if (city) {
-      filtered = filtered.filter(property => 
-        property.location.city.toLowerCase().includes(city.toLowerCase())
-      );
-    }
-    
-    if (district) {
-      filtered = filtered.filter(property => 
-        property.location.district.toLowerCase().includes(district.toLowerCase())
-      );
-    }
-    
-    // Sort properties with premium listings first
-    if (sortBy === 'premium') {
-      filtered.sort((a, b) => {
-        const aPremium = premiumService.getPremiumListing(a.id);
-        const bPremium = premiumService.getPremiumListing(b.id);
-        
-        if (aPremium && !bPremium) return -1;
-        if (!aPremium && bPremium) return 1;
-        
-        // If both are premium or both are standard, sort by newest
-        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-      });
-    } else if (sortBy === 'newest') {
-      filtered.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-    } else if (sortBy === 'price_asc') {
-      filtered.sort((a, b) => {
-        const priceA = a.priceUnit === 'miliar' ? a.price * 1000 : a.price;
-        const priceB = b.priceUnit === 'miliar' ? b.price * 1000 : b.price;
-        return priceA - priceB;
-      });
-    } else if (sortBy === 'price_desc') {
-      filtered.sort((a, b) => {
-        const priceA = a.priceUnit === 'miliar' ? a.price * 1000 : a.price;
-        const priceB = b.priceUnit === 'miliar' ? b.price * 1000 : b.price;
-        return priceB - priceA;
-      });
-    }
-    
-    setFilteredProperties(filtered);
-  }, [purpose, propertyType, province, city, district, sortBy]);
+  };
   
   const pageTitle = `Properti ${purpose === 'jual' ? 'Dijual' : 'Disewa'}${propertyType ? ` - ${propertyType}` : ''}`;
   
@@ -107,7 +104,7 @@ const PropertyListingPage: React.FC = () => {
             
             <div className="flex flex-col md:flex-row md:items-center justify-between bg-white p-4 rounded-lg shadow-sm">
               <p className="text-neutral-700 mb-4 md:mb-0">
-                Menampilkan <span className="font-semibold">{filteredProperties.length}</span> properti
+                Menampilkan <span className="font-semibold">{properties.length}</span> dari <span className="font-semibold">{totalCount}</span> properti
               </p>
               
               <div className="flex flex-col sm:flex-row gap-4">
@@ -153,14 +150,18 @@ const PropertyListingPage: React.FC = () => {
             </div>
           </div>
           
-          {filteredProperties.length > 0 ? (
+          {isLoading ? (
+            <div className="flex justify-center py-12">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+            </div>
+          ) : properties.length > 0 ? (
             <div className={`
               ${viewMode === 'grid' 
                 ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6' 
                 : 'flex flex-col space-y-4'
               }
             `}>
-              {filteredProperties.map(property => (
+              {properties.map(property => (
                 <PropertyCard key={property.id} property={property} />
               ))}
             </div>
@@ -172,6 +173,33 @@ const PropertyListingPage: React.FC = () => {
               <p className="text-neutral-600 mb-4">
                 Coba ubah filter pencarian Anda untuk melihat lebih banyak properti
               </p>
+            </div>
+          )}
+          
+          {/* Pagination */}
+          {totalCount > pageSize && (
+            <div className="mt-8 flex justify-center">
+              <div className="flex items-center space-x-2">
+                <button
+                  onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                  disabled={currentPage === 1}
+                  className="px-4 py-2 border rounded-lg disabled:opacity-50"
+                >
+                  Prev
+                </button>
+                
+                <div className="text-neutral-700">
+                  Page {currentPage} of {Math.ceil(totalCount / pageSize)}
+                </div>
+                
+                <button
+                  onClick={() => setCurrentPage(prev => prev + 1)}
+                  disabled={currentPage >= Math.ceil(totalCount / pageSize)}
+                  className="px-4 py-2 border rounded-lg disabled:opacity-50"
+                >
+                  Next
+                </button>
+              </div>
             </div>
           )}
         </div>

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Search, MapPin, Home } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { provinces, cities, districts } from '../../data/locations';
+import { locationService } from '../../services/locationService';
 
 interface SearchBoxProps {
   variant?: 'hero' | 'compact';
@@ -15,8 +15,17 @@ const SearchBox: React.FC<SearchBoxProps> = ({ variant = 'hero' }) => {
   const [selectedDistrict, setSelectedDistrict] = useState('');
   const [selectedType, setSelectedType] = useState('');
   
-  const [filteredCities, setFilteredCities] = useState(cities);
-  const [filteredDistricts, setFilteredDistricts] = useState(districts);
+  const [provinces, setProvinces] = useState<{id: string, name: string}[]>([]);
+  const [cities, setCities] = useState<{id: string, name: string, provinceId: string}[]>([]);
+  const [districts, setDistricts] = useState<{id: string, name: string, cityId: string}[]>([]);
+  
+  const [filteredCities, setFilteredCities] = useState<{id: string, name: string, provinceId: string}[]>([]);
+  const [filteredDistricts, setFilteredDistricts] = useState<{id: string, name: string, cityId: string}[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    fetchLocations();
+  }, []);
 
   useEffect(() => {
     if (selectedProvince) {
@@ -26,7 +35,7 @@ const SearchBox: React.FC<SearchBoxProps> = ({ variant = 'hero' }) => {
     } else {
       setFilteredCities(cities);
     }
-  }, [selectedProvince]);
+  }, [selectedProvince, cities]);
 
   useEffect(() => {
     if (selectedCity) {
@@ -35,7 +44,40 @@ const SearchBox: React.FC<SearchBoxProps> = ({ variant = 'hero' }) => {
     } else {
       setFilteredDistricts(districts);
     }
-  }, [selectedCity]);
+  }, [selectedCity, districts]);
+
+  const fetchLocations = async () => {
+    setIsLoading(true);
+    try {
+      // Fetch provinces
+      const provinceData = await locationService.getAllLocations({ type: 'provinsi', isActive: true });
+      setProvinces(provinceData.map(p => ({ id: p.id, name: p.name })));
+      
+      // Fetch cities
+      const cityData = await locationService.getAllLocations({ type: 'kota', isActive: true });
+      const mappedCities = cityData.map(c => ({ 
+        id: c.id, 
+        name: c.name, 
+        provinceId: c.parentId || '' 
+      }));
+      setCities(mappedCities);
+      setFilteredCities(mappedCities);
+      
+      // Fetch districts
+      const districtData = await locationService.getAllLocations({ type: 'kecamatan', isActive: true });
+      const mappedDistricts = districtData.map(d => ({ 
+        id: d.id, 
+        name: d.name, 
+        cityId: d.parentId || '' 
+      }));
+      setDistricts(mappedDistricts);
+      setFilteredDistricts(mappedDistricts);
+    } catch (error) {
+      console.error('Error fetching locations:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -79,6 +121,7 @@ const SearchBox: React.FC<SearchBoxProps> = ({ variant = 'hero' }) => {
                   className="w-full pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary/30 focus:border-primary"
                   value={selectedProvince}
                   onChange={(e) => setSelectedProvince(e.target.value)}
+                  disabled={isLoading}
                 >
                   <option value="">Pilih Provinsi</option>
                   {provinces.map(province => (
@@ -91,6 +134,7 @@ const SearchBox: React.FC<SearchBoxProps> = ({ variant = 'hero' }) => {
             <button
               type="submit"
               className="w-full btn-primary flex items-center justify-center"
+              disabled={isLoading}
             >
               <Search size={18} className="mr-2" />
               Cari Properti
@@ -128,6 +172,7 @@ const SearchBox: React.FC<SearchBoxProps> = ({ variant = 'hero' }) => {
               className="w-full pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary/30 focus:border-primary"
               value={selectedProvince}
               onChange={(e) => setSelectedProvince(e.target.value)}
+              disabled={isLoading}
             >
               <option value="">Pilih Provinsi</option>
               {provinces.map(province => (
@@ -142,7 +187,7 @@ const SearchBox: React.FC<SearchBoxProps> = ({ variant = 'hero' }) => {
               className="w-full pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary/30 focus:border-primary"
               value={selectedCity}
               onChange={(e) => setSelectedCity(e.target.value)}
-              disabled={!selectedProvince}
+              disabled={!selectedProvince || isLoading}
             >
               <option value="">Pilih Kota/Kabupaten</option>
               {filteredCities.map(city => (
@@ -157,7 +202,7 @@ const SearchBox: React.FC<SearchBoxProps> = ({ variant = 'hero' }) => {
               className="w-full pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary/30 focus:border-primary"
               value={selectedDistrict}
               onChange={(e) => setSelectedDistrict(e.target.value)}
-              disabled={!selectedCity}
+              disabled={!selectedCity || isLoading}
             >
               <option value="">Pilih Kecamatan</option>
               {filteredDistricts.map(district => (
@@ -172,6 +217,7 @@ const SearchBox: React.FC<SearchBoxProps> = ({ variant = 'hero' }) => {
               className="w-full pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary/30 focus:border-primary"
               value={selectedType}
               onChange={(e) => setSelectedType(e.target.value)}
+              disabled={isLoading}
             >
               <option value="">Semua Tipe Properti</option>
               <option value="rumah">Rumah</option>
@@ -187,6 +233,7 @@ const SearchBox: React.FC<SearchBoxProps> = ({ variant = 'hero' }) => {
         <button
           type="submit"
           className="w-full btn-primary flex items-center justify-center py-3"
+          disabled={isLoading}
         >
           <Search size={20} className="mr-2" />
           Cari Properti

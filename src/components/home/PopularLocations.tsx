@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
+import { locationService } from '../../services/locationService';
 
 interface LocationCardProps {
   name: string;
@@ -47,6 +48,101 @@ const LocationCard: React.FC<LocationCardProps> = ({
 };
 
 const PopularLocations: React.FC = () => {
+  const [locations, setLocations] = useState<LocationCardProps[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    fetchPopularLocations();
+  }, []);
+
+  const fetchPopularLocations = async () => {
+    setIsLoading(true);
+    try {
+      // Get popular locations from database
+      const popularLocations = await locationService.getAllLocations({
+        isActive: true
+      });
+      
+      // Sort by property count and take top locations
+      const sortedLocations = popularLocations
+        .sort((a, b) => (b.propertyCount || 0) - (a.propertyCount || 0))
+        .slice(0, 6);
+      
+      // Get parent locations for cities/districts
+      const locationWithParents = await Promise.all(sortedLocations.map(async (location) => {
+        let provinceName = '';
+        
+        if (location.type !== 'provinsi' && location.parentId) {
+          // For cities, get the province directly
+          if (location.type === 'kota') {
+            const province = popularLocations.find(p => p.id === location.parentId);
+            provinceName = province?.name || '';
+          } 
+          // For districts, get the city first, then the province
+          else if (location.type === 'kecamatan') {
+            const city = popularLocations.find(c => c.id === location.parentId);
+            if (city && city.parentId) {
+              const province = popularLocations.find(p => p.id === city.parentId);
+              provinceName = province?.name || '';
+            }
+          }
+        } else if (location.type === 'provinsi') {
+          provinceName = 'Indonesia';
+        }
+        
+        // Map location images (in a real app, these would be stored in the database)
+        const locationImages: {[key: string]: string} = {
+          'jakarta-selatan': 'https://images.pexels.com/photos/2437856/pexels-photo-2437856.jpeg',
+          'bandung': 'https://images.pexels.com/photos/2486168/pexels-photo-2486168.jpeg',
+          'surabaya': 'https://images.pexels.com/photos/1538177/pexels-photo-1538177.jpeg',
+          'bali': 'https://images.pexels.com/photos/4112236/pexels-photo-4112236.jpeg',
+          'yogyakarta': 'https://images.pexels.com/photos/2161467/pexels-photo-2161467.jpeg',
+          'default': 'https://images.pexels.com/photos/1732414/pexels-photo-1732414.jpeg'
+        };
+        
+        return {
+          name: location.name,
+          province: provinceName,
+          image: locationImages[location.slug] || locationImages.default,
+          propertyCount: location.propertyCount || 0,
+          slug: location.slug
+        };
+      }));
+      
+      setLocations(locationWithParents);
+    } catch (error) {
+      console.error('Error fetching popular locations:', error);
+      // Fallback to empty array
+      setLocations([]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <section className="py-12">
+        <div className="container mx-auto px-4">
+          <div className="text-center mb-10">
+            <h2 className="font-heading font-bold text-2xl md:text-3xl text-accent mb-2">
+              Lokasi Populer
+            </h2>
+            <p className="text-neutral-600 max-w-2xl mx-auto">
+              Jelajahi properti di lokasi-lokasi strategis dan berkembang di seluruh Indonesia
+            </p>
+          </div>
+          <div className="flex justify-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+          </div>
+        </div>
+      </section>
+    );
+  }
+
+  if (locations.length === 0) {
+    return null; // Don't show section if no locations
+  }
+
   return (
     <section className="py-12">
       <div className="container mx-auto px-4">
@@ -60,51 +156,29 @@ const PopularLocations: React.FC = () => {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <div className="lg:col-span-2 lg:row-span-2">
-            <LocationCard 
-              name="Jakarta Selatan"
-              province="DKI Jakarta"
-              image="https://images.pexels.com/photos/2437856/pexels-photo-2437856.jpeg"
-              propertyCount={1254}
-              slug="jakarta-selatan"
-            />
-          </div>
-          <div>
-            <LocationCard 
-              name="Bandung"
-              province="Jawa Barat"
-              image="https://images.pexels.com/photos/2486168/pexels-photo-2486168.jpeg"
-              propertyCount={823}
-              slug="bandung"
-            />
-          </div>
-          <div>
-            <LocationCard 
-              name="Surabaya"
-              province="Jawa Timur"
-              image="https://images.pexels.com/photos/1538177/pexels-photo-1538177.jpeg"
-              propertyCount={645}
-              slug="surabaya"
-            />
-          </div>
-          <div>
-            <LocationCard 
-              name="Bali"
-              province="Bali"
-              image="https://images.pexels.com/photos/4112236/pexels-photo-4112236.jpeg"
-              propertyCount={489}
-              slug="bali"
-            />
-          </div>
-          <div>
-            <LocationCard 
-              name="Yogyakarta"
-              province="DI Yogyakarta"
-              image="https://images.pexels.com/photos/2161467/pexels-photo-2161467.jpeg"
-              propertyCount={378}
-              slug="yogyakarta"
-            />
-          </div>
+          {locations.length > 0 && (
+            <div className="lg:col-span-2 lg:row-span-2">
+              <LocationCard 
+                name={locations[0].name}
+                province={locations[0].province}
+                image={locations[0].image}
+                propertyCount={locations[0].propertyCount}
+                slug={locations[0].slug}
+              />
+            </div>
+          )}
+          
+          {locations.slice(1).map((location, index) => (
+            <div key={location.slug}>
+              <LocationCard 
+                name={location.name}
+                province={location.province}
+                image={location.image}
+                propertyCount={location.propertyCount}
+                slug={location.slug}
+              />
+            </div>
+          ))}
         </div>
       </div>
     </section>
