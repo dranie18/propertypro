@@ -1,7 +1,7 @@
 # Compiled output
 build/
 dist/
-.next/m
+.next/
 
 # Dependencies
 node_modules/
