@@ -21,13 +21,14 @@ const LocationCard: React.FC<LocationCardProps> = ({
   return (
     <Link 
       to={`/lokasi/${slug}`} 
-      className="relative overflow-hidden rounded-2xl group h-60"
+      className="relative overflow-hidden rounded-2xl group h-full"
       aria-label={`Lihat properti di ${name}, ${province}`}
     >
       <img 
         src={image} 
         alt={`Properti di ${name}`} 
         className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+        loading="lazy"
       />
       <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent group-hover:from-black/90 group-hover:via-black/60 transition-all duration-300 flex flex-col justify-end p-5">
         <h3 className="font-heading text-white font-semibold text-xl mb-1 transform group-hover:translate-y-0 transition-transform duration-300">
@@ -97,6 +98,9 @@ const PopularLocations: React.FC = () => {
           'surabaya': 'https://images.pexels.com/photos/1538177/pexels-photo-1538177.jpeg',
           'bali': 'https://images.pexels.com/photos/4112236/pexels-photo-4112236.jpeg',
           'yogyakarta': 'https://images.pexels.com/photos/2161467/pexels-photo-2161467.jpeg',
+          'semarang': 'https://images.pexels.com/photos/3254729/pexels-photo-3254729.jpeg',
+          'medan': 'https://images.pexels.com/photos/2846217/pexels-photo-2846217.jpeg',
+          'makassar': 'https://images.pexels.com/photos/2111766/pexels-photo-2111766.jpeg',
           'default': 'https://images.pexels.com/photos/1732414/pexels-photo-1732414.jpeg'
         };
         
@@ -155,9 +159,10 @@ const PopularLocations: React.FC = () => {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {/* Featured location (larger card) */}
           {locations.length > 0 && (
-            <div className="lg:col-span-2 lg:row-span-2">
+            <div className="md:col-span-2 md:row-span-2 h-[400px] md:h-auto">
               <LocationCard 
                 name={locations[0].name}
                 province={locations[0].province}
@@ -168,8 +173,9 @@ const PopularLocations: React.FC = () => {
             </div>
           )}
           
-          {locations.slice(1).map((location, index) => (
-            <div key={location.slug}>
+          {/* Secondary locations */}
+          {locations.slice(1, 3).map((location, index) => (
+            <div key={location.slug} className="h-[200px]">
               <LocationCard 
                 name={location.name}
                 province={location.province}
@@ -179,6 +185,30 @@ const PopularLocations: React.FC = () => {
               />
             </div>
           ))}
+          
+          {/* Additional locations */}
+          {locations.slice(3).map((location, index) => (
+            <div key={location.slug} className="h-[200px]">
+              <LocationCard 
+                name={location.name}
+                province={location.province}
+                image={location.image}
+                propertyCount={location.propertyCount}
+                slug={location.slug}
+              />
+            </div>
+          ))}
+        </div>
+        
+        {/* View all locations link */}
+        <div className="mt-8 text-center">
+          <Link 
+            to="/lokasi" 
+            className="inline-flex items-center text-primary font-medium hover:underline"
+          >
+            Lihat semua lokasi
+            <ArrowRight size={16} className="ml-2" />
+          </Link>
         </div>
       </div>
     </section>
