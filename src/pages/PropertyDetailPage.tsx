@@ -317,6 +317,7 @@ const PropertyDetailPage: React.FC = () => {
                     src={activeImage} 
                     alt={property.title} 
                     className="w-full h-full object-cover"
+                    loading="lazy"
                   />
                 </div>
                 <div className="p-4 flex gap-2 overflow-x-auto">
@@ -330,6 +331,7 @@ const PropertyDetailPage: React.FC = () => {
                         src={img} 
                         alt={`${property.title} - Gambar ${index + 1}`}
                         className="w-full h-full object-cover"
+                        loading="lazy"
                       />
                     </div>
                   ))}
@@ -432,6 +434,7 @@ const PropertyDetailPage: React.FC = () => {
                       src={property.agent.avatar || 'https://images.pexels.com/photos/220453/pexels-photo-220453.jpeg'} 
                       alt={property.agent.name} 
                       className="w-full h-full object-cover"
+                      loading="lazy"
                     />
                   </div>
                   <div>
@@ -540,6 +543,7 @@ const PropertyDetailPage: React.FC = () => {
                             src={similarProperty.images[0]} 
                             alt={similarProperty.title} 
                             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                            loading="lazy"
                           />
                         </div>
                         <div>

@@ -139,6 +139,7 @@ const PropertyCard: React.FC<PropertyCardProps> = ({ property }) => {
             src={images[0]}
             alt={title}
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+            loading="lazy"
           />
         </Link>
         <div className="absolute top-2 right-2 z-10">

@@ -353,6 +353,7 @@ const UserProperties: React.FC = () => {
                       src={property.image}
                       alt={property.title}
                       className="w-full h-full object-cover"
+                      loading="lazy"
                     />
                     <div className="absolute top-2 right-2">
                       {getStatusBadge(property.status)}
@@ -439,6 +440,7 @@ const UserProperties: React.FC = () => {
                                 src={property.image}
                                 alt={property.title}
                                 className="w-full h-full object-cover"
+                                loading="lazy"
                               />
                             </div>
                             <div>
