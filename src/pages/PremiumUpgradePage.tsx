@@ -7,7 +7,6 @@ import { Crown, CheckCircle, ArrowLeft } from 'lucide-react';
 import { Helmet } from 'react-helmet-async';
 import { BillingDetails } from '../types/premium';
 import { premiumService } from '../services/premiumService';
-import { midtransService } from '../services/midtrans';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../contexts/ToastContext';
 
@@ -62,45 +61,36 @@ const PremiumUpgradePage: React.FC = () => {
         throw new Error('Failed to create payment record');
       }
 
-      // Create Midtrans transaction
-      const midtransResponse = await midtransService.createTransaction({
-        orderId,
-        amount: premiumPlan.price,
-        billingDetails,
-        itemDetails: [{
-          id: premiumPlan.id,
-          name: premiumPlan.name,
-          price: premiumPlan.price,
-          quantity: 1
-        }]
+      // Note: Midtrans integration has been removed
+      // This is where we would integrate with Xendit in the future
+      
+      // For now, simulate a successful payment
+      const simulatedPaymentResult = {
+        status: 'success',
+        result: {
+          transaction_id: `xendit-${Date.now()}`,
+          order_id: orderId,
+          payment_type: 'credit_card',
+          transaction_time: new Date().toISOString(),
+          transaction_status: 'settlement',
+          gross_amount: premiumPlan.price.toString()
+        }
+      };
+
+      // Update payment status
+      await premiumService.updatePaymentStatus(payment.id, 'success', simulatedPaymentResult.result.transaction_id);
+
+      // Create premium listing
+      await premiumService.createPremiumListing({
+        propertyId,
+        userId: user.id,
+        planId: premiumPlan.id,
+        paymentId: payment.id
       });
 
-      // Open payment modal
-      const paymentResult = await midtransService.openPaymentModal(midtransResponse.token);
-
-      if (paymentResult.status === 'success') {
-        // Update payment status
-        await premiumService.updatePaymentStatus(payment.id, 'success', paymentResult.result.transaction_id);
-
-        // Create premium listing
-        await premiumService.createPremiumListing({
-          propertyId,
-          userId: user.id,
-          planId: premiumPlan.id,
-          paymentId: payment.id
-        });
-
-        setPaymentData(paymentResult.result);
-        setCurrentStep('success');
-      } else if (paymentResult.status === 'pending') {
-        await premiumService.updatePaymentStatus(payment.id, 'pending');
-        showError('Payment Pending', 'Your payment is being processed. You will receive a confirmation email shortly.');
-        navigate('/dashboard/premium');
-      } else {
-        await premiumService.updatePaymentStatus(payment.id, 'failed');
-        showError('Payment Failed', 'Your payment could not be processed. Please try again.');
-        setCurrentStep('payment');
-      }
+      setPaymentData(simulatedPaymentResult.result);
+      setCurrentStep('success');
+      
     } catch (error) {
       console.error('Payment error:', error);
       showError('Payment Error', 'An error occurred while processing your payment. Please try again.');
