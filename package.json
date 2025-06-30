@@ -17,7 +17,8 @@
     "react-helmet-async": "^2.0.4",
     "react-router-dom": "^6.20.1",
     "axios": "^1.6.2",
-    "date-fns": "^3.0.6"
+    "date-fns": "^3.0.6",
+    "xendit-node": "^1.22.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.9.1",

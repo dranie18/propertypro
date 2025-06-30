@@ -16,6 +16,10 @@ import PremiumUpgradePage from './pages/PremiumUpgradePage';
 import PremiumDashboardPage from './pages/PremiumDashboardPage';
 import PremiumFeaturesPage from './pages/PremiumFeaturesPage';
 
+// Payment Pages
+import PaymentSuccessPage from './pages/payment/PaymentSuccessPage';
+import PaymentFailurePage from './pages/payment/PaymentFailurePage';
+
 // User Dashboard Pages
 import DashboardLayout from './components/dashboard/DashboardLayout';
 import DashboardOverview from './pages/dashboard/DashboardOverview';
@@ -65,6 +69,10 @@ function App() {
               {/* Premium Routes */}
               <Route path="/premium/upgrade" element={<PremiumUpgradePage />} />
               <Route path="/premium/features" element={<PremiumFeaturesPage />} />
+              
+              {/* Payment Routes */}
+              <Route path="/payment/success" element={<PaymentSuccessPage />} />
+              <Route path="/payment/failure" element={<PaymentFailurePage />} />
 
               {/* User Dashboard Routes */}
               <Route path="/dashboard" element={
