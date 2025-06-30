@@ -14,12 +14,67 @@ import {
   Home,
   Phone,
   Mail,
-  CheckCircle
+  CheckCircle,
+  Car,
+  Droplets,
+  Trees,
+  Tv,
+  Utensils,
+  Briefcase,
+  Sun,
+  Shield,
+  LayoutGrid
 } from 'lucide-react';
 import { formatPrice } from '../utils/formatter';
 import { Helmet } from 'react-helmet-async';
 import { listingService } from '../services/listingService';
 import { useToast } from '../contexts/ToastContext';
+import { getFeatureLabelById } from '../types/listing';
+
+// Feature icon mapping
+const featureIcons: Record<string, React.ElementType> = {
+  // Parking
+  garage: Car,
+  carport: Car,
+  street_parking: Car,
+  
+  // Outdoor spaces
+  garden: Trees,
+  patio: Trees,
+  balcony: Trees,
+  swimming_pool: Droplets,
+  
+  // Security
+  cctv: Shield,
+  gated_community: Shield,
+  security_system: Shield,
+  
+  // Interior amenities
+  air_conditioning: Sun,
+  built_in_wardrobes: Home,
+  storage: Home,
+  
+  // Kitchen features
+  modern_appliances: Utensils,
+  kitchen_island: Utensils,
+  pantry: Utensils,
+  
+  // Additional rooms
+  study: Briefcase,
+  home_office: Briefcase,
+  entertainment_room: Tv,
+  
+  // Layout options
+  open_floor_plan: LayoutGrid,
+  separate_dining: LayoutGrid,
+  master_bedroom_downstairs: Bed,
+  modern_kitchen: Utensils,
+  
+  // Utilities
+  solar_panels: Sun,
+  water_tank: Droplets,
+  backup_generator: Home
+};
 
 const PropertyDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -101,6 +156,73 @@ const PropertyDetailPage: React.FC = () => {
       </Layout>
     );
   }
+  
+  // Group features by category
+  const groupedFeatures: Record<string, string[]> = {};
+  
+  // Initialize with empty arrays for each category
+  const categories = [
+    'Parking',
+    'Outdoor Spaces',
+    'Security',
+    'Interior Amenities',
+    'Kitchen Features',
+    'Additional Rooms',
+    'Utilities',
+    'Layout Options',
+    'Other'
+  ];
+  
+  categories.forEach(category => {
+    groupedFeatures[category] = [];
+  });
+  
+  // Categorize features
+  property.features.forEach(feature => {
+    let found = false;
+    
+    // Check if it's a predefined feature
+    if (featureIcons[feature]) {
+      // Determine category based on feature ID
+      if (feature.includes('garage') || feature.includes('carport') || feature.includes('parking')) {
+        groupedFeatures['Parking'].push(feature);
+        found = true;
+      } else if (feature.includes('garden') || feature.includes('patio') || feature.includes('balcony') || feature.includes('pool')) {
+        groupedFeatures['Outdoor Spaces'].push(feature);
+        found = true;
+      } else if (feature.includes('cctv') || feature.includes('security') || feature.includes('gated')) {
+        groupedFeatures['Security'].push(feature);
+        found = true;
+      } else if (feature.includes('air') || feature.includes('wardrobe') || feature.includes('storage')) {
+        groupedFeatures['Interior Amenities'].push(feature);
+        found = true;
+      } else if (feature.includes('kitchen') || feature.includes('appliance') || feature.includes('pantry')) {
+        groupedFeatures['Kitchen Features'].push(feature);
+        found = true;
+      } else if (feature.includes('study') || feature.includes('office') || feature.includes('entertainment')) {
+        groupedFeatures['Additional Rooms'].push(feature);
+        found = true;
+      } else if (feature.includes('solar') || feature.includes('water') || feature.includes('generator')) {
+        groupedFeatures['Utilities'].push(feature);
+        found = true;
+      } else if (feature.includes('floor') || feature.includes('dining') || feature.includes('bedroom')) {
+        groupedFeatures['Layout Options'].push(feature);
+        found = true;
+      }
+    }
+    
+    // If not categorized, put in Other
+    if (!found) {
+      groupedFeatures['Other'].push(feature);
+    }
+  });
+  
+  // Remove empty categories
+  Object.keys(groupedFeatures).forEach(category => {
+    if (groupedFeatures[category].length === 0) {
+      delete groupedFeatures[category];
+    }
+  });
   
   return (
     <Layout>
@@ -239,6 +361,14 @@ const PropertyDetailPage: React.FC = () => {
                     <span className="text-sm text-neutral-500">Luas Tanah</span>
                     <span className="font-semibold">{property.landSize ? `${property.landSize} m²` : '-'}</span>
                   </div>
+                  
+                  {property.floors && (
+                    <div className="flex flex-col items-center justify-center p-4 bg-neutral-50 rounded-lg">
+                      <Home size={24} className="text-primary mb-2" />
+                      <span className="text-sm text-neutral-500">Jumlah Lantai</span>
+                      <span className="font-semibold">{property.floors}</span>
+                    </div>
+                  )}
                 </div>
                 
                 <div className="mb-6">
@@ -248,17 +378,31 @@ const PropertyDetailPage: React.FC = () => {
                   </p>
                 </div>
                 
-                {property.features.length > 0 && (
+                {/* Features by Category */}
+                {Object.keys(groupedFeatures).length > 0 && (
                   <div>
-                    <h3 className="font-heading font-semibold text-lg mb-2">Fasilitas & Fitur</h3>
-                    <ul className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                      {property.features.map((feature, index) => (
-                        <li key={index} className="flex items-center">
-                          <CheckCircle size={16} className="text-primary mr-2" />
-                          <span>{feature}</span>
-                        </li>
+                    <h3 className="font-heading font-semibold text-lg mb-3">Fasilitas & Fitur</h3>
+                    
+                    <div className="space-y-4">
+                      {Object.entries(groupedFeatures).map(([category, features]) => (
+                        features.length > 0 && (
+                          <div key={category} className="border rounded-lg p-3">
+                            <h4 className="font-medium text-neutral-800 mb-2">{category}</h4>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                              {features.map((feature, index) => {
+                                const Icon = featureIcons[feature] || CheckCircle;
+                                return (
+                                  <div key={index} className="flex items-center">
+                                    <Icon size={16} className="text-primary mr-2" />
+                                    <span>{getFeatureLabelById(feature) || feature}</span>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        )
                       ))}
-                    </ul>
+                    </div>
                   </div>
                 )}
               </div>

@@ -1,33 +1,95 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Heart, MapPin, Bed, Bath, Move } from 'lucide-react';
+import { 
+  Heart, 
+  MapPin, 
+  Bed, 
+  Bath, 
+  Move, 
+  Home,
+  Car,
+  Droplets,
+  Trees,
+  Tv,
+  Utensils,
+  Briefcase,
+  Sun,
+  Shield,
+  LayoutGrid
+} from 'lucide-react';
 import { Property } from '../../types';
 import { formatPrice } from '../../utils/formatter';
 import { premiumService } from '../../services/premiumService';
 import PremiumPropertyCard from '../premium/PremiumPropertyCard';
+import { getFeatureLabelById } from '../../types/listing';
 
 interface PropertyCardProps {
   property: Property;
 }
+
+// Feature icon mapping
+const featureIcons: Record<string, React.ElementType> = {
+  // Parking
+  garage: Car,
+  carport: Car,
+  street_parking: Car,
+  
+  // Outdoor spaces
+  garden: Trees,
+  patio: Trees,
+  balcony: Trees,
+  swimming_pool: Droplets,
+  
+  // Security
+  cctv: Shield,
+  gated_community: Shield,
+  security_system: Shield,
+  
+  // Interior amenities
+  air_conditioning: Sun,
+  built_in_wardrobes: Home,
+  storage: Home,
+  
+  // Kitchen features
+  modern_appliances: Utensils,
+  kitchen_island: Utensils,
+  pantry: Utensils,
+  
+  // Additional rooms
+  study: Briefcase,
+  home_office: Briefcase,
+  entertainment_room: Tv,
+  
+  // Layout options
+  open_floor_plan: LayoutGrid,
+  separate_dining: LayoutGrid,
+  master_bedroom_downstairs: Bed,
+  modern_kitchen: Utensils,
+  
+  // Utilities
+  solar_panels: Sun,
+  water_tank: Droplets,
+  backup_generator: Home
+};
 
 const PropertyCard: React.FC<PropertyCardProps> = ({ property }) => {
   const [premiumListing, setPremiumListing] = React.useState<any>(null);
   const [isLoading, setIsLoading] = React.useState(true);
 
   React.useEffect(() => {
-    const checkPremiumStatus = async () => {
-      try {
-        const premium = await premiumService.getPremiumListing(property.id);
-        setPremiumListing(premium);
-      } catch (error) {
-        console.error('Error checking premium status:', error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
     checkPremiumStatus();
-  }, [property.id]);
+  }, []);
+
+  const checkPremiumStatus = async () => {
+    try {
+      const premium = await premiumService.getPremiumListing(property.id);
+      setPremiumListing(premium);
+    } catch (error) {
+      console.error('Error checking premium status:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const handleAnalyticsUpdate = (type: 'view' | 'inquiry' | 'favorite') => {
     if (premiumListing) {
@@ -58,8 +120,15 @@ const PropertyCard: React.FC<PropertyCardProps> = ({ property }) => {
     bedrooms,
     bathrooms,
     buildingSize,
+    floors,
     images,
+    features
   } = property;
+
+  // Get up to 3 featured amenities to display as icons
+  const featuredAmenities = features
+    .filter(feature => featureIcons[feature])
+    .slice(0, 3);
 
   return (
     <div className="card group">
@@ -136,7 +205,29 @@ const PropertyCard: React.FC<PropertyCardProps> = ({ property }) => {
               <span className="text-sm">{buildingSize} m²</span>
             </div>
           )}
+          
+          {floors !== undefined && (
+            <div className="flex items-center">
+              <Home size={16} className="mr-1" />
+              <span className="text-sm">{floors} floor{floors > 1 ? 's' : ''}</span>
+            </div>
+          )}
         </div>
+        
+        {/* Featured Amenities */}
+        {featuredAmenities.length > 0 && (
+          <div className="flex justify-start gap-3 mt-3 pt-2 border-t border-neutral-200">
+            {featuredAmenities.map((feature, index) => {
+              const Icon = featureIcons[feature];
+              return (
+                <div key={index} className="flex items-center text-neutral-600" title={getFeatureLabelById(feature)}>
+                  <Icon size={14} className="mr-1" />
+                  <span className="text-xs">{getFeatureLabelById(feature)}</span>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
     </div>
   );

@@ -36,18 +36,65 @@ class ListingService {
           query = query.eq('purpose', filters.purpose);
         }
         
+        // Price range filters
         if (filters.priceRange) {
           const [min, max] = filters.priceRange;
           if (min !== null) query = query.gte('price', min);
           if (max !== null) query = query.lte('price', max);
         }
         
-        if (filters.bedrooms) {
-          query = query.gte('bedrooms', filters.bedrooms);
+        // Alternative price filters
+        if (filters.minPrice !== undefined) {
+          query = query.gte('price', filters.minPrice);
         }
         
-        if (filters.bathrooms) {
-          query = query.gte('bathrooms', filters.bathrooms);
+        if (filters.maxPrice !== undefined) {
+          query = query.lte('price', filters.maxPrice);
+        }
+        
+        // Bedroom filters
+        if (filters.minBedrooms !== undefined) {
+          query = query.gte('bedrooms', filters.minBedrooms);
+        }
+        
+        if (filters.maxBedrooms !== undefined) {
+          query = query.lte('bedrooms', filters.maxBedrooms);
+        }
+        
+        // Bathroom filters
+        if (filters.minBathrooms !== undefined) {
+          query = query.gte('bathrooms', filters.minBathrooms);
+        }
+        
+        if (filters.maxBathrooms !== undefined) {
+          query = query.lte('bathrooms', filters.maxBathrooms);
+        }
+        
+        // Building size filters
+        if (filters.minBuildingSize !== undefined) {
+          query = query.gte('building_size', filters.minBuildingSize);
+        }
+        
+        if (filters.maxBuildingSize !== undefined) {
+          query = query.lte('building_size', filters.maxBuildingSize);
+        }
+        
+        // Land size filters
+        if (filters.minLandSize !== undefined) {
+          query = query.gte('land_size', filters.minLandSize);
+        }
+        
+        if (filters.maxLandSize !== undefined) {
+          query = query.lte('land_size', filters.maxLandSize);
+        }
+        
+        // Floors filters
+        if (filters.minFloors !== undefined) {
+          query = query.gte('floors', filters.minFloors);
+        }
+        
+        if (filters.maxFloors !== undefined) {
+          query = query.lte('floors', filters.maxFloors);
         }
         
         if (filters.location) {
@@ -81,6 +128,18 @@ class ListingService {
           case 'views':
             query = query.order('views', { ascending: false });
             break;
+          case 'building_size_asc':
+            query = query.order('building_size', { ascending: true });
+            break;
+          case 'building_size_desc':
+            query = query.order('building_size', { ascending: false });
+            break;
+          case 'land_size_asc':
+            query = query.order('land_size', { ascending: true });
+            break;
+          case 'land_size_desc':
+            query = query.order('land_size', { ascending: false });
+            break;
           case 'premium':
             // First sort by is_promoted, then by created_at
             query = query.order('is_promoted', { ascending: false })
@@ -102,7 +161,17 @@ class ListingService {
       if (error) throw error;
       
       // Transform data to Property interface
-      const properties: Property[] = await this.transformListingsToProperties(data || []);
+      let properties: Property[] = await this.transformListingsToProperties(data || []);
+      
+      // Filter by features if specified (this needs to be done client-side since Supabase doesn't support array contains all)
+      if (filters?.features && filters.features.length > 0) {
+        properties = properties.filter(property => {
+          // Check if property has all the required features
+          return filters.features!.every(feature => 
+            property.features.includes(feature)
+          );
+        });
+      }
       
       return {
         data: properties,
@@ -222,7 +291,12 @@ class ListingService {
           location: {
             city,
             province
-          }
+          },
+          bedrooms: listing.bedrooms || undefined,
+          bathrooms: listing.bathrooms || undefined,
+          buildingSize: listing.building_size || undefined,
+          landSize: listing.land_size || undefined,
+          floors: listing.floors || undefined
         };
       }));
       
@@ -473,7 +547,8 @@ class ListingService {
       status: 'pending', // New listings start as pending
       views: 0,
       inquiries: 0,
-      is_promoted: false
+      is_promoted: false,
+      floors: formData.floors || null
     };
   }
 
@@ -518,6 +593,7 @@ class ListingService {
       bathrooms: listing.bathrooms || undefined,
       buildingSize: listing.building_size || undefined,
       landSize: listing.land_size || undefined,
+      floors: listing.floors || undefined,
       location: {
         province,
         city,
