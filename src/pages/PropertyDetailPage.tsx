@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import Layout from '../components/layout/Layout';
+import PropertyMap from '../components/common/PropertyMap';
 import { Property } from '../types';
 import { 
   MapPin, 
@@ -409,18 +410,24 @@ const PropertyDetailPage: React.FC = () => {
                 )}
               </div>
               
-              {/* Location */}
+              {/* Location Map */}
               <div className="bg-white rounded-lg shadow-md p-6 mb-6">
                 <h2 className="font-heading font-semibold text-xl mb-4">Lokasi</h2>
-                <div className="bg-neutral-100 h-60 flex items-center justify-center rounded mb-4">
-                  <div className="text-center">
-                    <MapPin size={32} className="mx-auto mb-2 text-primary" />
-                    <p>Peta Lokasi</p>
-                  </div>
-                </div>
-                <p className="text-neutral-700">
-                  <span className="font-medium">Alamat:</span> {property.location.address}, {property.location.district}, {property.location.city}, {property.location.province} {property.location.postalCode && `${property.location.postalCode}`}
-                </p>
+                
+                {/* Property Map Component */}
+                <PropertyMap
+                  propertyId={property.id}
+                  propertyTitle={property.title}
+                  location={{
+                    latitude: property.location.latitude,
+                    longitude: property.location.longitude,
+                    address: property.location.address,
+                    district: property.location.district,
+                    city: property.location.city,
+                    province: property.location.province
+                  }}
+                  searchRadius={2}
+                />
               </div>
             </div>
             
