@@ -1,7 +1,6 @@
 import { supabase } from '../lib/supabase';
 import { Listing, PropertyMedia, UserListing, ListingFormData, ListingFilters } from '../types/listing';
 import { Property, PropertyType, ListingStatus, Location } from '../types';
-import { provinces, cities, districts } from '../data/locations';
 
 /**
  * Service for managing property listings
@@ -18,8 +17,46 @@ class ListingService {
       let query = supabase
         .from('listings')
         .select(`
-          *,
-          property_media!inner(*)
+          id,
+          title,
+          description,
+          price,
+          price_unit,
+          property_type,
+          purpose,
+          bedrooms,
+          bathrooms,
+          building_size,
+          land_size,
+          floors,
+          address,
+          postal_code,
+          features,
+          status,
+          views,
+          inquiries,
+          is_promoted,
+          created_at,
+          user_profiles!fk_user (
+            id,
+            full_name,
+            phone,
+            company,
+            avatar_url
+          ),
+          property_media (
+            media_url,
+            is_primary
+          ),
+          province:locations!fk_province (
+            name
+          ),
+          city:locations!fk_city (
+            name
+          ),
+          district:locations!fk_district (
+            name
+          )
         `, { count: 'exact' });
 
       // Apply filters
@@ -161,7 +198,7 @@ class ListingService {
       if (error) throw error;
       
       // Transform data to Property interface
-      let properties: Property[] = await this.transformListingsToProperties(data || []);
+      let properties: Property[] = this.mapDbListingsToProperties(data || []);
       
       // Filter by features if specified (this needs to be done client-side since Supabase doesn't support array contains all)
       if (filters?.features && filters.features.length > 0) {
@@ -188,32 +225,57 @@ class ListingService {
    */
   async getListingById(id: string): Promise<Property | null> {
     try {
-      // Get the listing
       const { data: listing, error } = await supabase
         .from('listings')
-        .select('*')
+        .select(`
+          id,
+          title,
+          description,
+          price,
+          price_unit,
+          property_type,
+          purpose,
+          bedrooms,
+          bathrooms,
+          building_size,
+          land_size,
+          floors,
+          address,
+          postal_code,
+          features,
+          status,
+          views,
+          inquiries,
+          is_promoted,
+          created_at,
+          user_profiles!fk_user (
+            id,
+            full_name,
+            phone,
+            company,
+            avatar_url
+          ),
+          property_media (
+            media_url,
+            is_primary
+          ),
+          province:locations!fk_province (
+            name
+          ),
+          city:locations!fk_city (
+            name
+          ),
+          district:locations!fk_district (
+            name
+          )
+        `)
         .eq('id', id)
         .single();
       
       if (error) throw error;
       if (!listing) return null;
       
-      // Get the property media
-      const { data: media } = await supabase
-        .from('property_media')
-        .select('*')
-        .eq('listing_id', id)
-        .order('is_primary', { ascending: false });
-      
-      // Get the user profile (agent)
-      const { data: userProfile } = await supabase
-        .from('user_profiles')
-        .select('*')
-        .eq('id', listing.user_id)
-        .single();
-      
-      // Transform to Property interface
-      return this.transformListingToProperty(listing, media || [], userProfile);
+      return this.mapDbListingToProperty(listing);
     } catch (error) {
       console.error('Error fetching listing:', error);
       return null;
@@ -228,8 +290,34 @@ class ListingService {
       const { data, error } = await supabase
         .from('listings')
         .select(`
-          *,
-          property_media(*)
+          id,
+          title,
+          property_type,
+          purpose,
+          price,
+          price_unit,
+          status,
+          views,
+          created_at,
+          bedrooms,
+          bathrooms,
+          building_size,
+          land_size,
+          floors,
+          property_media (
+            media_url,
+            is_primary
+          ),
+          province:locations!fk_province (
+            name
+          ),
+          city:locations!fk_city (
+            name
+          ),
+          premium_listings!fk_premium_property (
+            status,
+            end_date
+          )
         `)
         .eq('user_id', userId)
         .order('created_at', { ascending: false });
@@ -237,10 +325,10 @@ class ListingService {
       if (error) throw error;
       
       // Transform to UserListing interface
-      const userListings: UserListing[] = await Promise.all((data || []).map(async (listing) => {
+      const userListings: UserListing[] = (data || []).map((listing) => {
         // Get location names
-        const province = provinces.find(p => p.id === listing.province_id)?.name || '';
-        const city = cities.find(c => c.id === listing.city_id)?.name || '';
+        const province = listing.province?.name || '';
+        const city = listing.city?.name || '';
         
         // Get primary image
         const media = listing.property_media || [];
@@ -267,13 +355,9 @@ class ListingService {
         }
         
         // Check if premium
-        const { data: premiumData } = await supabase
-          .from('premium_listings')
-          .select('*')
-          .eq('property_id', listing.id)
-          .eq('status', 'active')
-          .gt('end_date', new Date().toISOString())
-          .single();
+        const premiumData = listing.premium_listings?.find(p => 
+          p.status === 'active' && new Date(p.end_date) > new Date()
+        );
         
         return {
           id: listing.id,
@@ -298,7 +382,7 @@ class ListingService {
           landSize: listing.land_size || undefined,
           floors: listing.floors || undefined
         };
-      }));
+      });
       
       return userListings;
     } catch (error) {
@@ -553,82 +637,68 @@ class ListingService {
   }
 
   /**
-   * Transform database listing to frontend Property interface
+   * Map database listing response to Property interface (single listing)
    */
-  private async transformListingToProperty(
-    listing: Listing, 
-    media: PropertyMedia[], 
-    userProfile: any
-  ): Promise<Property> {
+  private mapDbListingToProperty(dbListing: any): Property {
     // Get location names
-    const province = provinces.find(p => p.id === listing.province_id)?.name || '';
-    const city = cities.find(c => c.id === listing.city_id)?.name || '';
-    const district = districts.find(d => d.id === listing.district_id)?.name || '';
+    const province = dbListing.province?.name || '';
+    const city = dbListing.city?.name || '';
+    const district = dbListing.district?.name || '';
     
     // Get images
-    const images = media.map(m => m.media_url);
+    const media = dbListing.property_media || [];
+    const images = media.map((m: any) => m.media_url);
     
     // Create agent object
+    const userProfile = dbListing.user_profiles;
     const agent = {
-      id: userProfile?.id || listing.user_id,
+      id: userProfile?.id || dbListing.user_id,
       name: userProfile?.full_name || 'Unknown Agent',
       phone: userProfile?.phone || '',
-      email: userProfile?.email || '',
+      email: '', // Email not included in the query for privacy
       avatar: userProfile?.avatar_url || undefined,
       company: userProfile?.company || undefined
     };
     
     // Map property type
-    const propertyType = listing.property_type as PropertyType;
+    const propertyType = dbListing.property_type as PropertyType;
     
     return {
-      id: listing.id,
-      title: listing.title,
-      description: listing.description,
-      price: listing.price,
-      priceUnit: listing.price_unit,
+      id: dbListing.id,
+      title: dbListing.title,
+      description: dbListing.description,
+      price: dbListing.price,
+      priceUnit: dbListing.price_unit,
       type: propertyType,
-      purpose: listing.purpose,
-      bedrooms: listing.bedrooms || undefined,
-      bathrooms: listing.bathrooms || undefined,
-      buildingSize: listing.building_size || undefined,
-      landSize: listing.land_size || undefined,
-      floors: listing.floors || undefined,
+      purpose: dbListing.purpose,
+      bedrooms: dbListing.bedrooms || undefined,
+      bathrooms: dbListing.bathrooms || undefined,
+      buildingSize: dbListing.building_size || undefined,
+      landSize: dbListing.land_size || undefined,
+      floors: dbListing.floors || undefined,
       location: {
         province,
         city,
         district,
-        address: listing.address || '',
-        postalCode: listing.postal_code || undefined
+        address: dbListing.address || '',
+        postalCode: dbListing.postal_code || undefined
       },
       images: images.length > 0 ? images : ['https://images.pexels.com/photos/106399/pexels-photo-106399.jpeg'],
-      features: listing.features || [],
+      features: dbListing.features || [],
       agent,
-      createdAt: listing.created_at,
-      isPromoted: listing.is_promoted,
-      status: listing.status as ListingStatus,
-      views: listing.views,
-      inquiries: listing.inquiries
+      createdAt: dbListing.created_at,
+      isPromoted: dbListing.is_promoted,
+      status: dbListing.status as ListingStatus,
+      views: dbListing.views,
+      inquiries: dbListing.inquiries
     };
   }
 
   /**
-   * Transform multiple database listings to frontend Property interface
+   * Map database listings response to Property interface (multiple listings)
    */
-  private async transformListingsToProperties(listings: any[]): Promise<Property[]> {
-    return Promise.all(listings.map(async (listing) => {
-      // Get user profile
-      const { data: userProfile } = await supabase
-        .from('user_profiles')
-        .select('*')
-        .eq('id', listing.user_id)
-        .single();
-      
-      // Get media
-      const media = listing.property_media || [];
-      
-      return this.transformListingToProperty(listing, media, userProfile);
-    }));
+  private mapDbListingsToProperties(dbListings: any[]): Property[] {
+    return dbListings.map(listing => this.mapDbListingToProperty(listing));
   }
 }
 
