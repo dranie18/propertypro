@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import Layout from '../components/layout/Layout';
 import { Eye, EyeOff } from 'lucide-react';
+import ErrorPopup from '../components/common/ErrorPopup';
 import { Helmet } from 'react-helmet-async';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../contexts/ToastContext';
@@ -12,6 +13,8 @@ const LoginPage: React.FC = () => {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
+  const [showErrorPopup, setShowErrorPopup] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
   
   // New state variables for validation errors
   const [emailError, setEmailError] = useState('');
@@ -36,12 +39,10 @@ const LoginPage: React.FC = () => {
 
   useEffect(() => {
     if (error) {
-      // Handle specific error messages
-      if (error.includes('Invalid login credentials')) {
-        showError(
-          authMessages.login.invalidCredentials.title,
-          authMessages.login.invalidCredentials.message
-        );
+      if (error.includes('Invalid login credentials') || error.includes('invalid_credentials')) {
+        // Show the centered error popup for invalid credentials
+        setErrorMessage('Invalid username or password. Please try again.');
+        setShowErrorPopup(true);
       } else if (error.includes('user not found')) {
         showError(
           authMessages.login.userNotFound.title,
@@ -301,6 +302,15 @@ const LoginPage: React.FC = () => {
               </div>
             </div>
           </div>
+          
+          {/* Error Popup */}
+          {showErrorPopup && (
+            <ErrorPopup 
+              message={errorMessage}
+              duration={3000}
+              onClose={() => setShowErrorPopup(false)}
+            />
+          )}
         </div>
       </div>
     </Layout>
