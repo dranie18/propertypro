@@ -547,14 +547,22 @@ class PremiumService {
       { id: 'virtual-tour', name: 'Virtual Tour', description: '360° property view', icon: 'Eye', enabled: true }
     ];
 
-    // Transform daily views
-    const dailyViews = (record.analytics_daily_views || []).map((entry: any) => ({
+    // Transform daily views - ensure it's an array before mapping
+    const dailyViewsData = Array.isArray(record.analytics_daily_views) 
+      ? record.analytics_daily_views 
+      : [];
+    
+    const dailyViews = dailyViewsData.map((entry: any) => ({
       date: entry.date,
       views: entry.views
     }));
 
-    // Transform top sources
-    const topSources = (record.analytics_top_sources || []).map((entry: any) => ({
+    // Transform top sources - ensure it's an array before mapping
+    const topSourcesData = Array.isArray(record.analytics_top_sources) 
+      ? record.analytics_top_sources 
+      : [];
+    
+    const topSources = topSourcesData.map((entry: any) => ({
       source: entry.source,
       count: entry.count
     }));
