@@ -34,11 +34,6 @@ class ListingService {
           inquiries,
           is_promoted,
           created_at,
-          user_profiles!fk_user (
-            id,
-            full_name,
-            avatar_url
-          ),
           property_media (
             media_url,
             is_primary
@@ -47,6 +42,9 @@ class ListingService {
             name
           ),
           city:locations!fk_city (
+            name
+          ),
+          district:locations!fk_district (
             name
           )
         `, { count: 'exact' });
@@ -641,15 +639,14 @@ class ListingService {
     const media = dbListing.property_media || [];
     const images = media.map((m: any) => m.media_url);
     
-    // Create agent object
-    const userProfile = dbListing.user_profiles;
+    // Create agent object with minimal data for listing cards
     const agent = {
-      id: userProfile?.id || dbListing.user_id,
-      name: userProfile?.full_name || 'Unknown Agent',
-      phone: userProfile?.phone || '',
+      id: dbListing.user_id,
+      name: 'Agent', // Simplified for listing cards
+      phone: '',
       email: '', // Email not included in the query for privacy
-      avatar: userProfile?.avatar_url || undefined,
-      company: userProfile?.company || undefined
+      avatar: undefined,
+      company: undefined
     };
     
     // Map property type
