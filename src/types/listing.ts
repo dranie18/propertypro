@@ -98,6 +98,8 @@ export interface ListingFormData {
   buildingSize: number;
   /** Land size in square meters */
   landSize: number;
+  /** Number of floors/levels */
+  floors?: number;
   /** Province ID */
   province: string;
   /** City ID */
@@ -159,6 +161,8 @@ export interface UserListing {
   buildingSize?: number;
   /** Land size in square meters (optional) */
   landSize?: number;
+  /** Number of floors/levels (optional) */
+  floors?: number;
   /** Number of floors/levels (optional) */
   floors?: number;
 }
