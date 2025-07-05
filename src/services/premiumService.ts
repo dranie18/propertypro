@@ -297,8 +297,7 @@ class PremiumService {
         .eq('property_id', propertyId)
         .eq('status', 'active')
         .gt('end_date', new Date().toISOString())
-        .limit(1)
-        .single();
+        .maybeSingle();
 
       if (error) {
         // If no rows found, return null instead of throwing
@@ -436,8 +435,7 @@ class PremiumService {
         .eq('property_id', propertyId)
         .eq('status', 'active')
         .gt('end_date', new Date().toISOString())
-        .limit(1)
-        .single();
+        .maybeSingle();
 
       if (error) {
         // If no rows found, just return without updating
