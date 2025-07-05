@@ -19,7 +19,6 @@ class ListingService {
         .select(`
           id,
           title,
-          description,
           price,
           price_unit,
           property_type,
@@ -29,8 +28,6 @@ class ListingService {
           building_size,
           land_size,
           floors,
-          address,
-          postal_code,
           features,
           status,
           views,
@@ -40,8 +37,6 @@ class ListingService {
           user_profiles!fk_user (
             id,
             full_name,
-            phone,
-            company,
             avatar_url
           ),
           property_media (
@@ -52,9 +47,6 @@ class ListingService {
             name
           ),
           city:locations!fk_city (
-            name
-          ),
-          district:locations!fk_district (
             name
           )
         `, { count: 'exact' });
