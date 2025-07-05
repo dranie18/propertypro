@@ -13,7 +13,10 @@ class PremiumService {
         .select('*')
         .eq('is_active', true);
         
-      if (error) throw error;
+      if (error) {
+        console.error('Supabase error in getPremiumPlans:', error);
+        throw error;
+      }
       
       if (!data || data.length === 0) {
         // Return default plan if no plans found in database
@@ -294,9 +297,17 @@ class PremiumService {
         .eq('property_id', propertyId)
         .eq('status', 'active')
         .gt('end_date', new Date().toISOString())
-        .maybeSingle();
+        .limit(1)
+        .single();
 
-      if (error) throw error;
+      if (error) {
+        // If no rows found, return null instead of throwing
+        if (error.code === 'PGRST116') {
+          return null;
+        }
+        console.error('Supabase error in getPremiumListing:', error);
+        throw error;
+      }
 
       if (!data) {
         return null;
@@ -306,13 +317,14 @@ class PremiumService {
       const plans = await this.getPremiumPlans();
       const plan = plans.find(p => p.id === data.plan_id);
       if (!plan) {
-        throw new Error('Premium plan not found');
+        console.error('Premium plan not found for plan_id:', data.plan_id);
+        return null;
       }
 
       // Transform to PremiumListing interface
       return this.transformDbRecordToPremiumListing(data, plan);
     } catch (error) {
-      console.error('Error getting premium listing:', error);
+      console.error('Error getting premium listing for propertyId:', propertyId, error);
       return null;
     }
   }
@@ -424,9 +436,17 @@ class PremiumService {
         .eq('property_id', propertyId)
         .eq('status', 'active')
         .gt('end_date', new Date().toISOString())
-        .maybeSingle();
+        .limit(1)
+        .single();
 
-      if (error) throw error;
+      if (error) {
+        // If no rows found, just return without updating
+        if (error.code === 'PGRST116') {
+          return;
+        }
+        console.error('Supabase error in updateAnalytics:', error);
+        throw error;
+      }
 
       if (!data) {
         return;
