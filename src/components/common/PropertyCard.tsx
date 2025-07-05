@@ -123,7 +123,9 @@ const PropertyCard: React.FC<PropertyCardProps> = ({ property }) => {
     buildingSize,
     floors,
     images,
-    features
+    features,
+    views,
+    description
   } = property;
 
   // Get up to 3 featured amenities to display as icons

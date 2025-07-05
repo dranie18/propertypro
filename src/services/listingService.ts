@@ -245,10 +245,6 @@ class ListingService {
             company,
             avatar_url
           ),
-          property_media (
-            media_url,
-            is_primary
-          ),
           province:locations!fk_province (
             name
           ),
@@ -294,10 +290,6 @@ class ListingService {
           building_size,
           land_size,
           floors,
-          property_media (
-            media_url,
-            is_primary
-          ),
           province:locations!fk_province (
             name
           ),
@@ -320,10 +312,8 @@ class ListingService {
         const province = listing.province?.name || '';
         const city = listing.city?.name || '';
         
-        // Get primary image
-        const media = listing.property_media || [];
-        const primaryImage = media.find(m => m.is_primary)?.media_url || 
-                            (media.length > 0 ? media[0].media_url : '');
+        // Use fallback image
+        const primaryImage = 'https://images.pexels.com/photos/106399/pexels-photo-106399.jpeg';
         
         // Map status
         let status: 'active' | 'inactive' | 'expired' | 'pending';
@@ -361,7 +351,7 @@ class ListingService {
           premiumExpiresAt: premiumData?.end_date,
           views: listing.views,
           createdAt: listing.created_at,
-          image: primaryImage || 'https://images.pexels.com/photos/106399/pexels-photo-106399.jpeg',
+          image: primaryImage,
           location: {
             city,
             province
@@ -636,8 +626,7 @@ class ListingService {
     const district = dbListing.district?.name || '';
     
     // Get images
-    const media = dbListing.property_media || [];
-    const images = media.map((m: any) => m.media_url);
+    const images = ['https://images.pexels.com/photos/106399/pexels-photo-106399.jpeg'];
     
     // Create agent object with minimal data for listing cards
     const agent = {
