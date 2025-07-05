@@ -7,6 +7,7 @@ import HomePage from './pages/HomePage';
 import PropertyListingPage from './pages/PropertyListingPage';
 import PropertyDetailPage from './pages/PropertyDetailPage';
 import LoginPage from './pages/LoginPage';
+import LocationDetailPage from './pages/LocationDetailPage';
 import RegisterPage from './pages/RegisterPage';
 import ForgotPasswordPage from './pages/ForgotPasswordPage';
 import ResetPasswordPage from './pages/ResetPasswordPage';
@@ -60,6 +61,7 @@ function App() {
               <Route path="/" element={<HomePage />} />
               <Route path="/jual" element={<PropertyListingPage />} />
               <Route path="/sewa" element={<PropertyListingPage />} />
+              <Route path="/lokasi/:locationSlug" element={<LocationDetailPage />} />
               <Route path="/properti/:id" element={<PropertyDetailPage />} />
               <Route path="/login" element={<LoginPage />} />
               <Route path="/register" element={<RegisterPage />} />

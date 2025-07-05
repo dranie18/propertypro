@@ -19,8 +19,8 @@ const LocationCard: React.FC<LocationCardProps> = ({
   slug 
 }) => {
   return (
-    <Link 
-      to={`/lokasi/${slug}`} 
+    <Link
+      to={`/lokasi/${slug}`}
       className="relative overflow-hidden rounded-2xl group h-full"
       aria-label={`Lihat properti di ${name}, ${province}`}
     >
@@ -37,7 +37,7 @@ const LocationCard: React.FC<LocationCardProps> = ({
         <div className="flex items-center justify-between">
           <div>
             <p className="text-neutral-200 text-sm">{province}</p>
-            <p className="text-white text-sm">{propertyCount} properti</p>
+            <p className="text-white text-sm">{propertyCount.toLocaleString()} properti</p>
           </div>
           <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-300 transform group-hover:translate-x-0 translate-x-4">
             <ArrowRight className="text-primary" size={20} />

@@ -7,6 +7,7 @@ import {
   Bath, 
   Move, 
   Home,
+  Star,
   Car,
   Droplets,
   Trees,
@@ -161,20 +162,45 @@ const PropertyCard: React.FC<PropertyCardProps> = ({ property }) => {
       <div className="p-4">
         <div className="mb-2">
           <span className="text-xs text-neutral-500 uppercase">
-            {type === 'rumah' ? 'Rumah' : 
-             type === 'apartemen' ? 'Apartemen' : 
-             type === 'ruko' ? 'Ruko' : 
-             type === 'tanah' ? 'Tanah' : 'Properti'}
+            {type === 'rumah' ? 'House' : 
+             type === 'apartemen' ? 'Apartment' : 
+             type === 'kondominium' ? 'Condominium' : 
+             type === 'ruko' ? 'Shop House' : 
+             type === 'tanah' ? 'Land' : 
+             type === 'gedung_komersial' ? 'Commercial' : 
+             type === 'ruang_industri' ? 'Industrial' : 'Property'}
           </span>
         </div>
-        <h3 className="font-heading font-semibold text-lg mb-1 truncate">
+        <h3 className="font-heading font-semibold text-lg mb-1 line-clamp-2 h-14">
           <Link to={`/properti/${id}`} className="hover:text-primary transition-colors">
             {title}
           </Link>
         </h3>
+        
         <p className="text-primary font-heading font-bold text-lg mb-3">
           {formatPrice(price, priceUnit)}
           {purpose === 'sewa' && <span className="text-sm font-normal text-neutral-500">/bulan</span>}
+        </p>
+
+        {/* Rating (using views as a proxy for popularity) */}
+        <div className="flex items-center mb-2">
+          {Array.from({ length: 5 }).map((_, index) => {
+            // Calculate a "rating" based on views (1-5 stars)
+            const rating = Math.min(5, Math.max(3, Math.floor(views / 100) + 3));
+            return (
+              <Star 
+                key={index} 
+                size={14} 
+                className={index < rating ? "text-yellow-500 fill-current" : "text-neutral-300"} 
+              />
+            );
+          })}
+          <span className="text-xs text-neutral-500 ml-1">({views} views)</span>
+        </div>
+
+        {/* Brief description */}
+        <p className="text-sm text-neutral-600 mb-3 line-clamp-2 h-10">
+          {description?.substring(0, 100)}...
         </p>
 
         <div className="flex items-center text-neutral-500 text-sm mb-3">
@@ -185,7 +211,7 @@ const PropertyCard: React.FC<PropertyCardProps> = ({ property }) => {
         </div>
 
         {/* Features */}
-        <div className="flex justify-between text-neutral-700 border-t border-neutral-200 pt-3">
+        <div className="flex justify-between text-neutral-700 border-t border-neutral-200 pt-3 flex-wrap gap-2">
           {bedrooms !== undefined && (
             <div className="flex items-center">
               <Bed size={16} className="mr-1" />
@@ -217,7 +243,7 @@ const PropertyCard: React.FC<PropertyCardProps> = ({ property }) => {
         
         {/* Featured Amenities */}
         {featuredAmenities.length > 0 && (
-          <div className="flex justify-start gap-3 mt-3 pt-2 border-t border-neutral-200">
+          <div className="flex flex-wrap justify-start gap-3 mt-3 pt-2 border-t border-neutral-200">
             {featuredAmenities.map((feature, index) => {
               const Icon = featureIcons[feature];
               return (
