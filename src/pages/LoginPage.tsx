@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import Layout from '../components/layout/Layout';
-import { Eye, EyeOff } from 'lucide-react';
-import ErrorPopup from '../components/common/ErrorPopup';
+import { Eye, EyeOff, AlertCircle } from 'lucide-react';
 import { Helmet } from 'react-helmet-async';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../contexts/ToastContext';
@@ -13,8 +12,7 @@ const LoginPage: React.FC = () => {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
-  const [showErrorPopup, setShowErrorPopup] = useState(false);
-  const [errorMessage, setErrorMessage] = useState('');
+  const [loginError, setLoginError] = useState('');
   
   // New state variables for validation errors
   const [emailError, setEmailError] = useState('');
@@ -40,9 +38,8 @@ const LoginPage: React.FC = () => {
   useEffect(() => {
     if (error) {
       if (error.includes('Invalid login credentials') || error.includes('invalid_credentials')) {
-        // Show the centered error popup for invalid credentials
-        setErrorMessage('Invalid username or password. Please try again.');
-        setShowErrorPopup(true);
+        // Set inline error message for invalid credentials
+        setLoginError('Incorrect email or password. Please try again or reset your password.');
       } else if (error.includes('user not found')) {
         showError(
           authMessages.login.userNotFound.title,
@@ -112,6 +109,7 @@ const LoginPage: React.FC = () => {
   // Handle email input change with validation
   const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newEmail = e.target.value;
+    setLoginError(''); // Clear login error when user starts typing
     setEmail(newEmail);
     setEmailError(validateEmail(newEmail));
   };
@@ -119,6 +117,7 @@ const LoginPage: React.FC = () => {
   // Handle password input change with validation
   const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newPassword = e.target.value;
+    setLoginError(''); // Clear login error when user starts typing
     setPassword(newPassword);
     setPasswordError(validatePassword(newPassword));
   };
@@ -237,6 +236,18 @@ const LoginPage: React.FC = () => {
                       {passwordError}
                     </p>
                   )}
+                  
+                  {/* Inline Login Error Message */}
+                  {loginError && (
+                    <div 
+                      className="mt-2 flex items-start text-red-600 bg-red-50 p-3 rounded-lg" 
+                      role="alert" 
+                      aria-live="assertive"
+                    >
+                      <AlertCircle size={18} className="mr-2 flex-shrink-0 mt-0.5" />
+                      <span className="text-sm">{loginError}</span>
+                    </div>
+                  )}
                 </div>
                 
                 <div className="flex items-center justify-between mb-6">
@@ -302,15 +313,6 @@ const LoginPage: React.FC = () => {
               </div>
             </div>
           </div>
-          
-          {/* Error Popup */}
-          {showErrorPopup && (
-            <ErrorPopup 
-              message={errorMessage}
-              duration={3000}
-              onClose={() => setShowErrorPopup(false)}
-            />
-          )}
         </div>
       </div>
     </Layout>
