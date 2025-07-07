@@ -196,7 +196,7 @@ const PropertyCard: React.FC<PropertyCardProps> = ({ property }) => {
         <div className="flex items-center text-neutral-500 text-sm mb-3">
           <MapPin size={16} className="mr-1 flex-shrink-0" />
           <span className="truncate">
-            {location.district}, {location.city}
+            {location.district ? `${location.district}, ${location.city}` : location.city}
           </span>
         </div>
 
