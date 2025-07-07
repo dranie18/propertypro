@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { User as SupabaseUser, Session, AuthError } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
-import { Database } from '../types/supabase';
+import { Database } from '../types/supabase'; 
 
 type UserProfile = Database['public']['Tables']['user_profiles']['Row'];
 
@@ -364,6 +364,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const clearError = () => {
     dispatch({ type: 'CLEAR_ERROR' });
   };
+  
+  const clearError = React.useCallback(() => {
+    dispatch({ type: 'CLEAR_ERROR' });
+  }, [dispatch]);
 
   const isAdmin = () => {
     return state.user?.role === 'admin' || state.user?.role === 'superadmin';
