@@ -128,6 +128,43 @@ class LocationService {
       throw error;
     }
   }
+
+  async getAllLocations(filters?: {
+    isActive?: boolean;
+    search?: string;
+    type?: string;
+  }): Promise<Location[]> {
+    try {
+      let queryBuilder = supabase
+        .from('locations')
+        .select('*')
+        .order('name');
+
+      if (filters?.isActive !== undefined) {
+        queryBuilder = queryBuilder.eq('is_active', filters.isActive);
+      }
+
+      if (filters?.search) {
+        queryBuilder = queryBuilder.ilike('name', `%${filters.search}%`);
+      }
+
+      if (filters?.type) {
+        queryBuilder = queryBuilder.eq('type', filters.type);
+      }
+
+      const { data, error } = await queryBuilder;
+
+      if (error) {
+        console.error('Error fetching all locations:', error);
+        throw error;
+      }
+
+      return data || [];
+    } catch (error) {
+      console.error('Failed to fetch all locations:', error);
+      throw error;
+    }
+  }
 }
 
 export const locationService = new LocationService();
