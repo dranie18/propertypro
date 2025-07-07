@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, MapPin, Home, DollarSign } from 'lucide-react';
+import { Search, MapPin, Home, Filter, ChevronUp, ChevronDown } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { locationService } from '../../services/locationService';
 
@@ -22,6 +22,8 @@ const SearchBox: React.FC<SearchBoxProps> = ({
   const [purpose, setPurpose] = useState<'jual' | 'sewa'>(initialFilters.purpose || 'jual');
   const [selectedProvince, setSelectedProvince] = useState(initialFilters.province || '');
   const [selectedType, setSelectedType] = useState(initialFilters.type || '');
+  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   
   // Price filters
   const [priceRange, setPriceRange] = useState<[number, number]>([
@@ -30,6 +32,40 @@ const SearchBox: React.FC<SearchBoxProps> = ({
   ]);
   
   const [provinces, setProvinces] = useState<{id: string, name: string}[]>([]);
+
+  useEffect(() => {
+    const loadProvinces = async () => {
+      setIsLoading(true);
+      try {
+        const data = await locationService.getProvinces();
+        setProvinces(data);
+      } catch (error) {
+        console.error('Failed to load provinces:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadProvinces();
+  }, []);
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    handleSearch();
+  };
+
+  const handleSearch = () => {
+    const params = new URLSearchParams();
+    
+    if (selectedProvince) {
+      params.append('province', selectedProvince);
+    }
+    if (selectedType) {
+      params.append('type', selectedType);
+    }
+    if (priceRange[0] > 0) {
+      params.append('minPrice', priceRange[0].toString());
+    }
     if (priceRange[1] < 10000) {
       params.append('maxPrice', priceRange[1].toString());
     }
@@ -75,41 +111,6 @@ const SearchBox: React.FC<SearchBoxProps> = ({
                 </select>
               </div>
             </div>
-            
-            <button
-              type="button"
-              onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
-              className="w-full flex items-center justify-center px-4 py-2 border rounded-lg text-neutral-700 hover:bg-neutral-50"
-            >
-              <Filter size={18} className="mr-2" />
-              {showAdvancedFilters ? 'Hide Filters' : 'More Filters'}
-              {showAdvancedFilters ? <ChevronUp size={16} className="ml-2" /> : <ChevronDown size={16} className="ml-2" />}
-            </button>
-            
-            {showAdvancedFilters && (
-              <div className="w-full grid grid-cols-1 md:grid-cols-2 gap-4 mt-2 p-4 border rounded-lg bg-neutral-50">
-                <div>
-                  <label className="block text-sm font-medium text-neutral-700 mb-1">
-                    Property Type
-                  </label>
-                  <select
-                    className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary/30 focus:border-primary"
-                    value={selectedType}
-                    onChange={(e) => setSelectedType(e.target.value)}
-                  >
-                    <option value="">All Types</option>
-                    <option value="rumah">House</option>
-                    <option value="apartemen">Apartment</option>
-                    <option value="kondominium">Condominium</option>
-                    <option value="ruko">Shop House</option>
-                    <option value="tanah">Land</option>
-                    <option value="gedung_komersial">Commercial Building</option>
-                    <option value="ruang_industri">Industrial Space</option>
-                    <option value="lainnya">Other</option>
-                  </select>
-                </div>
-                
-                <div>
 
             <div className="w-full">
               <div className="relative">
@@ -131,25 +132,39 @@ const SearchBox: React.FC<SearchBoxProps> = ({
                 </select>
               </div>
             </div>
-
-            <div className="w-full">
-              <label className="block text-sm font-medium text-neutral-700 mb-1">
-                Rentang Harga (Juta)
-              </label>
-              <input
-                type="range"
-                min="0"
-                max="10000"
-                step="100"
-                className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
-                value={priceRange[1]}
-                onChange={(e) => setPriceRange([priceRange[0], parseInt(e.target.value)])}
-              />
-              <div className="flex justify-between text-xs text-neutral-500 mt-1">
-                <span>Rp {priceRange[0]} Juta</span>
-                <span>Rp {priceRange[1]} Juta</span>
+            
+            <button
+              type="button"
+              onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
+              className="w-full flex items-center justify-center px-4 py-2 border rounded-lg text-neutral-700 hover:bg-neutral-50"
+            >
+              <Filter size={18} className="mr-2" />
+              {showAdvancedFilters ? 'Hide Filters' : 'More Filters'}
+              {showAdvancedFilters ? <ChevronUp size={16} className="ml-2" /> : <ChevronDown size={16} className="ml-2" />}
+            </button>
+            
+            {showAdvancedFilters && (
+              <div className="w-full p-4 border rounded-lg bg-neutral-50">
+                <div>
+                  <label className="block text-sm font-medium text-neutral-700 mb-1">
+                    Rentang Harga (Juta)
+                  </label>
+                  <input
+                    type="range"
+                    min="0"
+                    max="10000"
+                    step="100"
+                    className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+                    value={priceRange[1]}
+                    onChange={(e) => setPriceRange([priceRange[0], parseInt(e.target.value)])}
+                  />
+                  <div className="flex justify-between text-xs text-neutral-500 mt-1">
+                    <span>Rp {priceRange[0]} Juta</span>
+                    <span>Rp {priceRange[1]} Juta</span>
+                  </div>
+                </div>
               </div>
-            </div>
+            )}
             
             <button
               type="submit"
