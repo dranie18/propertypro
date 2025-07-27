@@ -12,6 +12,10 @@ import RegisterPage from './pages/RegisterPage';
 import ForgotPasswordPage from './pages/ForgotPasswordPage';
 import ResetPasswordPage from './pages/ResetPasswordPage';
 
+// New Email Confirmation Pages
+import EmailConfirmationSuccessPage from './pages/EmailConfirmationSuccessPage';
+import EmailConfirmationFailurePage from './pages/EmailConfirmationFailurePage';
+
 // Premium Pages
 import PremiumUpgradePage from './pages/PremiumUpgradePage';
 import PremiumDashboardPage from './pages/PremiumDashboardPage';
@@ -67,6 +71,11 @@ function App() {
               <Route path="/register" element={<RegisterPage />} />
               <Route path="/forgot-password" element={<ForgotPasswordPage />} />
               <Route path="/reset-password" element={<ResetPasswordPage />} />
+
+              {/* New Email Confirmation Routes */}
+              <Route path="/email-confirmation-success" element={<EmailConfirmationSuccessPage />} />
+              <Route path="/email-confirmation-failure" element={<EmailConfirmationFailurePage />} />
+              <Route path="/verify-email" element={<EmailConfirmationSuccessPage />} /> {/* This route is handled by the Edge Function redirect */}
 
               {/* Premium Routes */}
               <Route path="/premium/upgrade" element={<PremiumUpgradePage />} />

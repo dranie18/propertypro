@@ -5,6 +5,8 @@ import DataTable, { Column } from '../../components/admin/DataTable';
 import { Location, LocationHierarchy } from '../../types/admin';
 import { locationService } from '../../services/locationService';
 import { useToast } from '../../contexts/ToastContext';
+import { Upload, XCircle } from 'lucide-react';
+import { supabase } from '../../lib/supabase';
 
 const LocationManagement: React.FC = () => {
   const { showSuccess, showError } = useToast();
@@ -579,55 +581,66 @@ interface LocationFormModalProps {
   onSave: (location: Location) => void;
 }
 
-const LocationFormModal: React.FC<LocationFormModalProps> = ({ 
-  location, 
+const LocationFormModal: React.FC<LocationFormModalProps> = ({
+  location,
   locations,
-  onClose, 
-  onSave 
+  onClose,
+  onSave,
 }) => {
   const [formData, setFormData] = useState({
     name: location?.name || '',
     slug: location?.slug || '',
-    type: location?.type || 'province' as const,
-    parentId: location?.parentId || '',
+    type: location?.type || ('provinsi' as const), // Ensure type matches DB enum
+    parentId: location?.parent_id || '', // Use parent_id from existing location
     description: location?.description || '',
-    isActive: location?.isActive ?? true,
-    coordinates: {
-      latitude: location?.coordinates?.latitude || 0,
-      longitude: location?.coordinates?.longitude || 0,
-    },
+    isActive: location?.is_active ?? true, // Use is_active from existing location
+    latitude: location?.latitude || 0,
+    longitude: location?.longitude || 0,
+    image_url: location?.image_url || '', // Initialize with existing image URL
+    image_alt_text: location?.image_alt_text || '', // Initialize with existing alt text
   });
+
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreviewUrl, setImagePreviewUrl] = useState<string>(formData.image_url || ''); // Use formData.image_url for initial preview
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
+  const [imageUploadError, setImageUploadError] = useState<string | null>(null);
+
   const [availableParents, setAvailableParents] = useState<Location[]>([]);
   const [isLoadingParents, setIsLoadingParents] = useState(false);
   const { showError } = useToast();
+
+  useEffect(() => {
+    // Update image preview if formData.image_url changes (e.g., when editing an existing location)
+    setImagePreviewUrl(formData.image_url || '');
+  }, [formData.image_url]);
 
   useEffect(() => {
     loadAvailableParents();
   }, [formData.type]);
 
   const loadAvailableParents = async () => {
-    const typeHierarchy = {
-      province: [],
-      city: ['province'],
-      district: ['city'],
-      subdistrict: ['district'],
+    const typeHierarchy: { [key: string]: string[] } = { // Explicitly define typeHierarchy
+      provinsi: [],
+      kota: ['provinsi'],
+      kecamatan: ['kota'],
+      kelurahan: ['kecamatan'],
     };
     
-    const allowedParentTypes = typeHierarchy[formData.type as keyof typeof typeHierarchy];
+    const allowedParentTypes = typeHierarchy[formData.type];
     
-    if (allowedParentTypes.length === 0) {
+    if (!allowedParentTypes || allowedParentTypes.length === 0) {
       setAvailableParents([]);
+      setFormData(prev => ({ ...prev, parentId: '' })); // Clear parentId if no parent type
       return;
     }
     
     setIsLoadingParents(true);
     try {
-      const filters = {
-        type: allowedParentTypes[0],
+      // Fetch parents based on the allowed parent type (assuming only one level up)
+      const parents = await locationService.getAllLocations({
+        type: allowedParentTypes[0], // Get locations of the allowed parent type
         isActive: true,
-      };
-      
-      const parents = await locationService.getAllLocations(filters);
+      });
       
       // Filter out the current location to prevent circular references
       setAvailableParents(
@@ -658,17 +671,119 @@ const LocationFormModal: React.FC<LocationFormModalProps> = ({
     }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      // Validate image file types
+      if (!file.type.startsWith('image/')) {
+        setImageUploadError('Invalid file type. Please select an image (PNG, JPG, GIF).');
+        setImageFile(null);
+        setImagePreviewUrl('');
+        return;
+      }
+      // Validate image file size (e.g., 5MB limit)
+      if (file.size > 5 * 1024 * 1024) {
+        setImageUploadError('File size too large. Maximum 5MB.');
+        setImageFile(null);
+        setImagePreviewUrl('');
+        return;
+      }
+
+      setImageFile(file);
+      setImagePreviewUrl(URL.createObjectURL(file));
+      setImageUploadError(null); // Clear previous errors
+    } else {
+      setImageFile(null);
+      setImagePreviewUrl(formData.image_url || ''); // Revert to existing image if input cleared
+      setImageUploadError(null);
+    }
+  };
+
+  const uploadImage = async (): Promise<string | null> => {
+    // If no new file is selected and there's an existing URL, return it
+    if (!imageFile && formData.image_url) return formData.image_url;
+    // If no new file and no existing URL, return null
+    if (!imageFile && !formData.image_url) return null;
+
+    setIsUploadingImage(true);
+    setImageUploadError(null);
+
+    try {
+      const fileExtension = imageFile!.name.split('.').pop();
+      // Ensure slug is available for folder structure, fallback to a generic name
+      const folderName = formData.slug || 'untitled-location';
+      const fileName = `${Date.now()}-${Math.random().toString(36).substring(2, 8)}.${fileExtension}`;
+      const filePath = `${folderName}/${fileName}`; // Organize by location slug
+
+      const { data, error } = await supabase.storage
+        .from('location-images') // Use your bucket name
+        .upload(filePath, imageFile!, {
+          cacheControl: '3600', // Cache for 1 hour
+          upsert: false, // Do not overwrite if file exists (unique naming prevents this)
+        });
+
+      if (error) {
+        throw error;
+      }
+
+      const { data: publicUrlData } = supabase.storage
+        .from('location-images')
+        .getPublicUrl(data.path);
+
+      return publicUrlData.publicUrl;
+    } catch (error: any) {
+      console.error('Error uploading image:', error);
+      setImageUploadError(`Failed to upload image: ${error.message}`);
+      return null;
+    } finally {
+      setIsUploadingImage(false);
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
+    // Basic validation for required fields
+    if (!formData.name || !formData.slug || !formData.type) {
+      showError('Validation Error', 'Please fill in all required fields.');
+      return;
+    }
+    if (formData.type !== 'provinsi' && !formData.parentId) {
+      showError('Validation Error', 'Parent location is required for non-province types.');
+      return;
+    }
+
+    let finalImageUrl: string | null = formData.image_url;
+
+    // Only attempt upload if a new file is selected or existing image is cleared
+    if (imageFile || (formData.image_url && imagePreviewUrl === '')) {
+      finalImageUrl = await uploadImage();
+      if (finalImageUrl === null && imageFile) { // If upload failed for a new file
+        showError('Upload Failed', 'Could not upload image. Please try again.');
+        return;
+      }
+    } else if (!imageFile && imagePreviewUrl === '') {
+        // If user explicitly cleared the image and didn't select a new one
+        finalImageUrl = null;
+    }
+
     const newLocation: Location = {
-      id: location?.id || Date.now().toString(),
-      ...formData,
-      propertyCount: location?.propertyCount || 0,
-      createdAt: location?.createdAt || new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
+      id: location?.id || crypto.randomUUID(), // Use crypto.randomUUID() for new IDs
+      name: formData.name,
+      slug: formData.slug,
+      type: formData.type,
+      parent_id: formData.parentId || null,
+      description: formData.description || null,
+      is_active: formData.isActive,
+      property_count: location?.property_count || 0, // Keep existing count
+      latitude: formData.latitude,
+      longitude: formData.longitude,
+      image_url: finalImageUrl, // Store the uploaded URL or null
+      image_alt_text: formData.image_alt_text || formData.name, // Use name as default alt text
+      created_at: location?.created_at || new Date().toISOString(),
+      updated_at: new Date().toISOString(),
     };
-    
+
     onSave(newLocation);
   };
 
@@ -722,14 +837,14 @@ const LocationFormModal: React.FC<LocationFormModalProps> = ({
                   parentId: '' // Reset parent when type changes
                 }))}
               >
-                <option value="province">Provinsi</option>
-                <option value="city">Kota/Kabupaten</option>
-                <option value="district">Kecamatan</option>
-                <option value="subdistrict">Kelurahan/Desa</option>
+                <option value="provinsi">Provinsi</option>
+                <option value="kota">Kota/Kabupaten</option>
+                <option value="kecamatan">Kecamatan</option>
+                <option value="kelurahan">Kelurahan/Desa</option>
               </select>
             </div>
             
-            {formData.type !== 'province' && (
+            {formData.type !== 'provinsi' && (
               <div>
                 <label className="block text-sm font-medium text-neutral-700 mb-1">
                   Parent Lokasi
@@ -776,13 +891,10 @@ const LocationFormModal: React.FC<LocationFormModalProps> = ({
                   type="number"
                   step="any"
                   className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50"
-                  value={formData.coordinates.latitude}
+                  value={formData.latitude}
                   onChange={(e) => setFormData(prev => ({ 
                     ...prev, 
-                    coordinates: { 
-                      ...prev.coordinates, 
-                      latitude: parseFloat(e.target.value) || 0 
-                    }
+                    latitude: parseFloat(e.target.value) || 0 
                   }))}
                 />
               </div>
@@ -794,13 +906,10 @@ const LocationFormModal: React.FC<LocationFormModalProps> = ({
                   type="number"
                   step="any"
                   className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50"
-                  value={formData.coordinates.longitude}
+                  value={formData.longitude}
                   onChange={(e) => setFormData(prev => ({ 
                     ...prev, 
-                    coordinates: { 
-                      ...prev.coordinates, 
-                      longitude: parseFloat(e.target.value) || 0 
-                    }
+                    longitude: parseFloat(e.target.value) || 0 
                   }))}
                 />
               </div>
@@ -818,6 +927,72 @@ const LocationFormModal: React.FC<LocationFormModalProps> = ({
                 Lokasi aktif
               </label>
             </div>
+
+            {/* Image Upload Field */}
+            <div>
+              <label className="block text-sm font-medium text-neutral-700 mb-1">
+                Gambar Lokasi
+              </label>
+              <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-neutral-300 border-dashed rounded-md">
+                <div className="space-y-1 text-center">
+                  {imagePreviewUrl ? (
+                    <div className="relative w-32 h-32 mx-auto mb-2">
+                      <img src={imagePreviewUrl} alt="Image Preview" className="w-full h-full object-cover rounded-md" />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setImageFile(null);
+                          setImagePreviewUrl('');
+                          setFormData(prev => ({ ...prev, image_url: '' })); // Clear URL in form data
+                        }}
+                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
+                        aria-label="Remove image"
+                      >
+                        <XCircle size={16} />
+                      </button>
+                    </div>
+                  ) : (
+                    <Upload size={32} className="mx-auto text-neutral-400" />
+                  )}
+                  <div className="flex text-sm text-neutral-600">
+                    <label
+                      htmlFor="file-upload"
+                      className="relative cursor-pointer bg-white rounded-md font-medium text-primary hover:text-primary/80 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-primary"
+                    >
+                      <span>Upload a file</span>
+                      <input
+                        id="file-upload"
+                        name="file-upload"
+                        type="file"
+                        className="sr-only"
+                        accept="image/*"
+                        onChange={handleImageChange}
+                        disabled={isUploadingImage}
+                      />
+                    </label>
+                    <p className="pl-1">or drag and drop</p>
+                  </div>
+                  <p className="text-xs text-neutral-500">PNG, JPG, GIF up to 5MB</p>
+                  {imageUploadError && (
+                    <p className="text-red-500 text-xs mt-1">{imageUploadError}</p>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Image Alt Text */}
+            <div>
+              <label className="block text-sm font-medium text-neutral-700 mb-1">
+                Deskripsi Gambar (Alt Text)
+              </label>
+              <input
+                type="text"
+                className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50"
+                value={formData.image_alt_text}
+                onChange={(e) => setFormData(prev => ({ ...prev, image_alt_text: e.target.value }))}
+                placeholder="Contoh: Pemandangan kota Jakarta"
+              />
+            </div>
           </div>
           
           <div className="flex justify-end space-x-2 mt-6">
@@ -825,14 +1000,16 @@ const LocationFormModal: React.FC<LocationFormModalProps> = ({
               type="button"
               onClick={onClose}
               className="px-4 py-2 text-neutral-600 hover:text-neutral-800"
+              disabled={isUploadingImage}
             >
               Batal
             </button>
             <button
               type="submit"
               className="btn-primary"
+              disabled={isUploadingImage}
             >
-              {location ? 'Simpan Perubahan' : 'Tambah Lokasi'}
+              {isUploadingImage ? 'Mengunggah...' : (location ? 'Simpan Perubahan' : 'Tambah Lokasi')}
             </button>
           </div>
         </form>
