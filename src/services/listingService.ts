@@ -9,6 +9,8 @@ class ListingService {
     count: number;
   }> {
     try {
+      console.log('getAllListings called with filters:', filters, 'page:', page, 'pageSize:', pageSize);
+      
       let query = supabase
         .from('listings')
         .select(`
@@ -158,21 +160,33 @@ class ListingService {
       const to = from + pageSize - 1;
       query = query.range(from, to);
       
+      console.log('Executing main listings query...');
       const { data, error, count } = await query;
       
-      if (error) throw error;
+      if (error) {
+        console.error('Supabase query error in getAllListings:', error);
+        throw error;
+      }
 
+      console.log('Main listings query successful, enriching with related data...');
       const enrichedListings = await this._enrichListingsWithRelatedData(data || []);
       
       let properties: Property[] = this.mapDbListingsToProperties(enrichedListings);
       
+      console.log('getAllListings completed successfully, returning', properties.length, 'properties');
       return {
         data: properties,
         count: count || 0
       };
     } catch (error) {
-      console.error('Error fetching listings:', error);
-      return { data: [], count: 0 };
+      // Handle network errors gracefully
+      if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
+        console.warn('Network error fetching listings - Supabase may be unreachable:', error.message);
+        return { data: [], count: 0 };
+      }
+      
+      console.error('Unexpected error fetching listings:', error);
+      throw error; // Re-throw non-network errors so calling components can handle them
     }
   }
 
@@ -494,6 +508,8 @@ class ListingService {
     if (!listings.length) return [];
     
     try {
+      console.log('Enriching', listings.length, 'listings with related data...');
+      
       // Extract all unique IDs needed for related data
       const listingIds = listings.map(listing => listing.id);
       const provinceIds = [...new Set(listings.map(listing => listing.province_id).filter(Boolean))];
@@ -501,30 +517,42 @@ class ListingService {
       const districtIds = [...new Set(listings.map(listing => listing.district_id).filter(Boolean))];
       const userIds = [...new Set(listings.map(listing => listing.user_id).filter(Boolean))];
       
+      console.log('Fetching media for', listingIds.length, 'listings...');
       // Fetch all media for these listings in one batch
       const { data: allMedia, error: mediaError } = await supabase
         .from('property_media')
         .select('listing_id, media_url, is_primary')
         .in('listing_id', listingIds);
-      if (mediaError) throw mediaError;
+      if (mediaError) {
+        console.error('Error fetching property media:', mediaError);
+        // Don't throw, continue without media data
+      }
 
+      console.log('Fetching locations for provinces:', provinceIds.length, 'cities:', cityIds.length, 'districts:', districtIds.length);
       // Fetch all locations in one batch
       const { data: allLocations, error: locationsError } = await supabase
         .from('locations')
         .select('id, name, type')
         .in('id', [...provinceIds, ...cityIds, ...districtIds]);
-      if (locationsError) throw locationsError;
+      if (locationsError) {
+        console.error('Error fetching locations:', locationsError);
+        // Don't throw, continue without location data
+      }
       
+      console.log('Fetching user profiles for', userIds.length, 'users...');
       // Fetch all user profiles in one batch
       const { data: allUsers, error: usersError } = await supabase
         .from('user_profiles')
         .select('id, full_name, phone, company, avatar_url')
         .in('id', userIds);
-      if (usersError) throw usersError;
+      if (usersError) {
+        console.error('Error fetching user profiles:', usersError);
+        // Don't throw, continue without user data
+      }
       
       // Create lookup maps for quick access
       const mediaByListingId = new Map();
-      if (allMedia) {
+      if (allMedia && !mediaError) {
         allMedia.forEach(media => {
           if (!mediaByListingId.has(media.listing_id)) {
             mediaByListingId.set(media.listing_id, []);
@@ -534,19 +562,20 @@ class ListingService {
       }
       
       const locationsById = new Map();
-      if (allLocations) {
+      if (allLocations && !locationsError) {
         allLocations.forEach(location => {
           locationsById.set(location.id, location);
         });
       }
       
       const usersById = new Map();
-      if (allUsers) {
+      if (allUsers && !usersError) {
         allUsers.forEach(user => {
           usersById.set(user.id, user);
         });
       }
       
+      console.log('Enriching listings with fetched data...');
       // Enrich each listing with its related data
       return listings.map(listing => {
         // Add media
@@ -570,8 +599,22 @@ class ListingService {
         };
       });
     } catch (error) {
-      console.error('Error enriching listings with related data:', error);
-      throw error; // Re-throw to be caught by calling function
+      // Handle network errors gracefully
+      if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
+        console.warn('Network error enriching listings with related data - returning basic data:', error.message);
+        // Return listings without enriched data
+        return listings.map(listing => ({
+          ...listing,
+          _property_media: [],
+          _province_name: '',
+          _city_name: '',
+          _district_name: '',
+          _agent_profile: null
+        }));
+      }
+      
+      console.error('Unexpected error enriching listings with related data:', error);
+      throw error; // Re-throw non-network errors
     }
   }
 

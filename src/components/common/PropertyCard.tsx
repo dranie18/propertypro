@@ -87,16 +87,18 @@ const PropertyCard: React.FC<PropertyCardProps> = ({ property }) => {
   const checkPremiumStatus = async () => {
     setIsLoading(true);
     try {
+      console.log('Checking premium status for property:', property.id);
       const premium = await premiumService.getPremiumListing(property.id);
+      console.log('Premium status result:', premium ? 'Premium listing found' : 'No premium listing');
       setPremiumListing(premium);
     } catch (error: any) { // MODIFIED: Catch error as 'any'
       // Handle network errors gracefully without breaking the UI
       if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
-        console.warn('Network error checking premium status - displaying as regular property card');
-        showError('Network Error', 'Could not load premium status. Displaying basic property card.'); // ADDED: User feedback
+        console.warn('Network error checking premium status for property', property.id, '- displaying as regular property card');
+        // Don't show error to user for premium status check failures, just log it
       } else {
-        console.error('Error checking premium status:', error);
-        showError('Error', error.message || 'Failed to load premium status.'); // ADDED: User feedback
+        console.error('Unexpected error checking premium status for property', property.id, ':', error);
+        // Don't show error to user for premium status check failures, just log it
       }
       // Ensure premium listing is set to null so regular card is displayed
       setPremiumListing(null);

@@ -285,32 +285,40 @@ class PremiumService {
 
   async getPremiumListing(propertyId: string): Promise<PremiumListing | null> {
     try {
+      console.log('getPremiumListing called with propertyId:', propertyId);
+      
       // Check if Supabase client is properly configured
       if (!supabase || !supabase.supabaseUrl || !supabase.supabaseKey) {
         console.warn('Supabase client not properly configured');
         return null;
       }
 
+      console.log('Attempting to fetch premium listing from database...');
       const { data, error } = await supabase
         .from('premium_listings')
-        .select('*')
+        .select('id, property_id, user_id, plan_id, status, start_date, end_date, payment_id, analytics_views, analytics_inquiries, analytics_favorites, analytics_conversion_rate, analytics_daily_views, analytics_top_sources, created_at, updated_at')
         .eq('property_id', propertyId)
         .eq('status', 'active')
         .gt('end_date', new Date().toISOString())
         .maybeSingle();
 
       if (error) {
+        console.error('Supabase query error in getPremiumListing:', error);
         console.error('Supabase error fetching premium_listings:', error);
         if (error.code === 'PGRST116') {
+          console.log('No premium listing found for property:', propertyId);
           return null;
         }
         throw error;
       }
 
       if (!data) {
+        console.log('No active premium listing found for property:', propertyId);
         return null;
       }
 
+      console.log('Premium listing data retrieved:', data);
+      
       // Get the plan
       const plans = await this.getPremiumPlans();
       const plan = plans.find(p => p.id === data.plan_id);
@@ -324,12 +332,12 @@ class PremiumService {
     } catch (error) {
       // Handle network errors gracefully
       if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
-        console.warn('Network error fetching premium listing - Supabase may be unreachable:', error.message);
+        console.warn('Network error fetching premium listing for property', propertyId, '- Supabase may be unreachable:', error.message);
         return null;
       }
       
       // Handle other errors
-      console.error('Error in getPremiumListing function:', propertyId, error);
+      console.error('Unexpected error in getPremiumListing function for property', propertyId, ':', error);
       return null;
     }
   }

@@ -114,7 +114,34 @@ const PropertyListingPage: React.FC = () => {
   const fetchProperties = async () => {
     setIsLoading(true);
     setError(null);
+    setError(null);
     try {
+      console.log('PropertyListingPage: Fetching properties with filters:', {
+        purpose,
+        type: propertyType,
+        location: { province, city, district },
+        priceRange: [minPrice, maxPrice],
+        bedrooms: [minBedrooms, maxBedrooms],
+        bathrooms: [minBathrooms, maxBathrooms],
+        buildingSize: [minBuildingSize, maxBuildingSize],
+        landSize: [minLandSize, maxLandSize],
+        floors: [minFloors, maxFloors],
+        features: featuresFromUrl,
+        sortBy,
+        page: currentPage
+      });
+      
+      console.log('Fetching properties with filters:', {
+        status: 'active',
+        location: location.type === 'provinsi' ? { province: location.id } :
+                 location.type === 'kota' ? { city: location.id } :
+                 { district: location.id },
+        type: propertyType,
+        minBedrooms: bedrooms ? parseInt(bedrooms) : undefined,
+        priceRange: [priceRange[0] ? parseFloat(priceRange[0]) : undefined, priceRange[1] ? parseFloat(priceRange[1]) : undefined],
+        sortBy
+      });
+      
       // Prepare filters
       const filters: any = {
         purpose,
@@ -157,19 +184,43 @@ const PropertyListingPage: React.FC = () => {
         filters.features = featuresFromUrl;
       }
       
+      console.log('PropertyListingPage: Calling listingService.getAllListings...');
       // Fetch properties
+      console.log('Calling listingService.getAllListings...');
       const { data, count } = await listingService.getAllListings(
         filters,
         currentPage,
         pageSize
       );
       
+      console.log('PropertyListingPage: Properties fetched successfully:', data.length, 'properties, total count:', count);
+      console.log('Properties fetched successfully:', data.length, 'properties, total count:', count);
       setProperties(data);
       setTotalCount(count);
     } catch (error: any) { // MODIFIED: Catch error as 'any' for message access
-      console.error('Error fetching properties:', error);
-      setError(error.message || 'Failed to load properties. Please try again.'); // ADDED: Set error message
-      showError('Error', error.message || 'Failed to load properties. Please try again.');
+      // Handle network errors gracefully
+      if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
+        console.warn('PropertyListingPage: Network error fetching properties - Supabase may be unreachable:', error.message);
+        setError('Network connection issue. Please check your internet connection and try again.');
+        showError('Network Error', 'Unable to connect to the server. Please check your internet connection and try again.');
+      } else {
+        console.error('PropertyListingPage: Unexpected error fetching properties:', error);
+        setError(error.message || 'Failed to load properties. Please try again.');
+        showError('Error', error.message || 'Failed to load properties. Please try again.');
+      }
+      // Set empty data on error
+      setProperties([]);
+      setTotalCount(0);
+        setError('Network connection issue. Please check your internet connection and try again.');
+        showError('Network Error', 'Unable to connect to the server. Please check your internet connection and try again.');
+      } else {
+        console.error('Unexpected error fetching properties:', error);
+        setError(error.message || 'Failed to load properties. Please try again.');
+        showError('Error', error.message || 'Failed to load properties. Please try again.');
+      }
+      // Set empty data on error
+      setProperties([]);
+      setTotalCount(0);
     } finally {
       setIsLoading(false);
     }
