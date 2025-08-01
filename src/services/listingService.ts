@@ -19,7 +19,8 @@ class ListingService {
           province:locations!listings_province_id_fkey(name),
           city:locations!listings_city_id_fkey(name),
           district:locations!listings_district_id_fkey(name),
-          agent_profile:user_profiles(full_name, phone, company, avatar_url) // MODIFIED: Removed 'email'
+          agent_profile:user_profiles(full_name, phone, company, avatar_url),
+          premium_listings!fk_premium_property(*)
         `, { count: 'exact' });
 
       // Apply filters
@@ -203,7 +204,8 @@ class ListingService {
           province:locations!listings_province_id_fkey(name),
           city:locations!listings_city_id_fkey(name),
           district:locations!listings_district_id_fkey(name),
-          agent_profile:user_profiles(full_name, phone, company, avatar_url) // MODIFIED: Removed 'email'
+          agent_profile:user_profiles(full_name, phone, company, avatar_url),
+          premium_listings!fk_premium_property(*)
         `)
         .eq('id', id)
         .single();
@@ -770,6 +772,17 @@ class ListingService {
     const city = dbListing._city_name || '';
     const district = dbListing._district_name || '';
     
+    // Process premium listing details
+    let premiumDetails = null;
+    if (dbListing.premium_listings && Array.isArray(dbListing.premium_listings)) {
+      const activePremium = dbListing.premium_listings.find(premium => 
+        premium.status === 'active' && new Date(premium.end_date) > new Date()
+      );
+      if (activePremium) {
+        premiumDetails = activePremium;
+      }
+    }
+    
     let images = ['https://images.pexels.com/photos/106399/pexels-photo-106399.jpeg'];
     if (dbListing.property_media && dbListing.property_media.length > 0) {
       images = dbListing.property_media.map((media: any) => media.media_url);
@@ -814,7 +827,8 @@ class ListingService {
       isPromoted: dbListing.is_promoted,
       status: dbListing.status as ListingStatus,
       views: dbListing.views,
-      inquiries: dbListing.inquiries
+      inquiries: dbListing.inquiries,
+      premiumDetails
     };
   }
 

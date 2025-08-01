@@ -10,13 +10,11 @@ import { premiumService } from '../../services/premiumService';
 interface PremiumPropertyCardProps {
   property: Property;
   premiumListing?: PremiumListing;
-  onAnalyticsUpdate?: (type: 'view' | 'inquiry' | 'favorite') => void;
 }
 
 const PremiumPropertyCard: React.FC<PremiumPropertyCardProps> = ({ 
   property, 
-  premiumListing,
-  onAnalyticsUpdate 
+  premiumListing
 }) => {
   const {
     id,
@@ -54,11 +52,6 @@ const PremiumPropertyCard: React.FC<PremiumPropertyCardProps> = ({
     if (isPremium) {
       // Update analytics in Supabase
       premiumService.updateAnalytics(id, 'favorite');
-      
-      // Call the callback if provided
-      if (onAnalyticsUpdate) {
-        onAnalyticsUpdate('favorite');
-      }
     }
   };
 

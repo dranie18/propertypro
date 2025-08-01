@@ -46,6 +46,8 @@ export interface Property {
   views?: number;
   /** Number of inquiries the property has received */
   inquiries?: number;
+  /** Premium listing details if the property is premium */
+  premiumDetails?: any;
 }
 
 /**

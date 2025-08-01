@@ -21,10 +21,8 @@ import {
 } from 'lucide-react';
 import { Property } from '../../types';
 import { formatPrice } from '../../utils/formatter';
-import { premiumService } from '../../services/premiumService';
 import PremiumPropertyCard from '../premium/PremiumPropertyCard';
 import { getFeatureLabelById } from '../../types/listing';
-import { useToast } from '../../contexts/ToastContext'; // ADD THIS LINE
 
 interface PropertyCardProps {
   property: Property;
@@ -76,59 +74,12 @@ const featureIcons: Record<string, React.ElementType> = {
 };
 
 const PropertyCard: React.FC<PropertyCardProps> = ({ property }) => {
-  const [premiumListing, setPremiumListing] = React.useState<any>(null);
-  const [isLoading, setIsLoading] = React.useState(true);
-  const { showError } = useToast();
-
-  React.useEffect(() => {
-    checkPremiumStatus();
-  }, [property.id]);
-
-  const checkPremiumStatus = async () => {
-    setIsLoading(true);
-    try {
-      console.log('Checking premium status for property:', property.id);
-      const premium = await premiumService.getPremiumListing(property.id);
-      console.log('Premium status result:', premium ? 'Premium listing found' : 'No premium listing');
-      setPremiumListing(premium);
-    } catch (error: any) { // MODIFIED: Catch error as 'any'
-      // Handle network errors gracefully without breaking the UI
-      if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
-        console.warn('Network error checking premium status for property', property.id, '- displaying as regular property card');
-        // Don't show error to user for premium status check failures, just log it
-      } else {
-        console.error('Unexpected error checking premium status for property', property.id, ':', error);
-        // Don't show error to user for premium status check failures, just log it
-      }
-      // Ensure premium listing is set to null so regular card is displayed
-      setPremiumListing(null);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleAnalyticsUpdate = (type: 'view' | 'inquiry' | 'favorite') => {
-    if (premiumListing) {
-      premiumService.updateAnalytics(property.id, type);
-    }
-  };
-
-  // If property has premium listing, use PremiumPropertyCard
-  // MODIFIED: Only render PremiumPropertyCard if not loading and premiumListing is available
-  if (isLoading) {
-    return (
-      <div className="card group flex items-center justify-center h-64">
-        <Loader size={32} className="animate-spin text-primary" /> {/* ADDED: Loader */}
-      </div>
-    );
-  }
-
-  if (premiumListing) {
+  // Check if property has premium details
+  if (property.premiumDetails) {
     return (
       <PremiumPropertyCard 
         property={property} 
-        premiumListing={premiumListing}
-        onAnalyticsUpdate={handleAnalyticsUpdate}
+        premiumListing={property.premiumDetails}
       />
     );
   }
