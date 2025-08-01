@@ -1,3 +1,5 @@
+import { PremiumListing } from './premium';
+
 /**
  * Core property interface representing a real estate listing
  */
@@ -47,7 +49,7 @@ export interface Property {
   /** Number of inquiries the property has received */
   inquiries?: number;
   /** Premium listing details if the property is premium */
-  premiumDetails?: any;
+  premiumDetails?: PremiumListing | null;
 }
 
 /**

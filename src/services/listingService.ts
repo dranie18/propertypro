@@ -832,8 +832,105 @@ class ListingService {
     };
   }
 
-  private mapDbListingsToProperties(dbListings: any[]): Property[] {
-    return dbListings.map(listing => this.mapDbListingToProperty(listing));
+  private async mapDbListingsToProperties(dbListings: any[]): Promise<Property[]> {
+    // Fetch premium plans once for all listings to avoid repeated calls
+    let premiumPlans: any[] = [];
+    try {
+      premiumPlans = await premiumService.getPremiumPlans();
+    } catch (error) {
+      console.error('Error fetching premium plans for mapping:', error);
+    }
+    
+    // Process all listings in parallel for better performance
+    const propertyPromises = dbListings.map(async (listing) => {
+      // Process premium listing details
+      let premiumDetails: PremiumListing | null = null;
+      if (listing.premium_listings && Array.isArray(listing.premium_listings)) {
+        const activePremium = listing.premium_listings.find(premium => 
+          premium.status === 'active' && new Date(premium.end_date) > new Date()
+        );
+        if (activePremium) {
+          try {
+            premiumDetails = premiumService.transformDbRecordToPremiumListing(activePremium, premiumPlans);
+          } catch (error) {
+            console.error('Error transforming premium listing data:', error);
+            // Fallback: create a basic structure to prevent crashes
+            premiumDetails = {
+              id: activePremium.id,
+              propertyId: activePremium.property_id,
+              userId: activePremium.user_id,
+              planId: activePremium.plan_id,
+              status: activePremium.status,
+              startDate: activePremium.start_date,
+              endDate: activePremium.end_date,
+              paymentId: activePremium.payment_id,
+              analytics: {
+                views: activePremium.analytics_views || 0,
+                inquiries: activePremium.analytics_inquiries || 0,
+                favorites: activePremium.analytics_favorites || 0,
+                conversionRate: activePremium.analytics_conversion_rate || 0
+              },
+              createdAt: activePremium.created_at,
+              updatedAt: activePremium.updated_at
+            };
+          }
+        }
+      }
+      
+      const province = listing._province_name || '';
+      const city = listing._city_name || '';
+      const district = listing._district_name || '';
+      
+      let images = ['https://images.pexels.com/photos/106399/pexels-photo-106399.jpeg'];
+      if (listing.property_media && listing.property_media.length > 0) {
+        images = listing.property_media.map((media: any) => media.media_url);
+      }
+      
+      const agentProfile = listing.agent_profile || {};
+      const agent = {
+        id: listing.user_id,
+        name: agentProfile.full_name || 'Agent',
+        phone: agentProfile.phone || '',
+        email: '', 
+        avatar: agentProfile.avatar_url,
+        company: agentProfile.company
+      };
+      
+      const propertyType = listing.property_type as PropertyType;
+      
+      return {
+        id: listing.id,
+        title: listing.title,
+        description: listing.description,
+        price: listing.price,
+        priceUnit: listing.price_unit,
+        type: propertyType,
+        purpose: listing.purpose,
+        bedrooms: listing.bedrooms || undefined,
+        bathrooms: listing.bathrooms || undefined,
+        buildingSize: listing.building_size || undefined,
+        landSize: listing.land_size || undefined,
+        floors: listing.floors || undefined,
+        location: {
+          province,
+          city,
+          district,
+          address: listing.address || '',
+          postalCode: listing.postal_code || undefined
+        },
+        images,
+        features: listing.features || [],
+        agent,
+        createdAt: listing.created_at,
+        isPromoted: listing.is_promoted,
+        status: listing.status as ListingStatus,
+        views: listing.views,
+        inquiries: listing.inquiries,
+        premiumDetails
+      };
+    });
+    
+    return Promise.all(propertyPromises);
   }
 
   /**

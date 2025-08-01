@@ -26,6 +26,12 @@ const PremiumPropertyCard: React.FC<PremiumPropertyCardProps> = ({
     console.error('PremiumPropertyCard received null or undefined premiumListing prop:', premiumListing);
     return null;
   }
+  
+  // Additional check for analytics object
+  if (!premiumListing.analytics) {
+    console.error('PremiumPropertyCard: premiumListing.analytics is undefined. PremiumListing:', premiumListing);
+    return null;
+  }
 
   const {
     id,
