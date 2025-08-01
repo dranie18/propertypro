@@ -211,16 +211,6 @@ const PropertyListingPage: React.FC = () => {
       // Set empty data on error
       setProperties([]);
       setTotalCount(0);
-        setError('Network connection issue. Please check your internet connection and try again.');
-        showError('Network Error', 'Unable to connect to the server. Please check your internet connection and try again.');
-      } else {
-        console.error('Unexpected error fetching properties:', error);
-        setError(error.message || 'Failed to load properties. Please try again.');
-        showError('Error', error.message || 'Failed to load properties. Please try again.');
-      }
-      // Set empty data on error
-      setProperties([]);
-      setTotalCount(0);
     } finally {
       setIsLoading(false);
     }
