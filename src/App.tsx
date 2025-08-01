@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { HelmetProvider } from 'react-helmet-async';
 import { AuthProvider } from './contexts/AuthContext';
@@ -53,6 +53,7 @@ import ModerationHistory from './pages/admin/ModerationHistory';
 import Analytics from './pages/admin/Analytics';
 import Settings from './pages/admin/Settings';
 import UnauthorizedPage from './pages/admin/UnauthorizedPage';
+import { supabase } from './lib/supabase';
 
 function App() {
   return (
