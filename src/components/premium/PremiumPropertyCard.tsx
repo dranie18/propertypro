@@ -16,6 +16,17 @@ const PremiumPropertyCard: React.FC<PremiumPropertyCardProps> = ({
   property, 
   premiumListing
 }) => {
+  // Defensive check to prevent crashes from null/undefined props
+  if (!property) {
+    console.error('PremiumPropertyCard received null or undefined property prop:', property);
+    return null;
+  }
+
+  if (!premiumListing) {
+    console.error('PremiumPropertyCard received null or undefined premiumListing prop:', premiumListing);
+    return null;
+  }
+
   const {
     id,
     title,
