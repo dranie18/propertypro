@@ -114,7 +114,6 @@ const PropertyListingPage: React.FC = () => {
   const fetchProperties = async () => {
     setIsLoading(true);
     setError(null);
-    setError(null);
     try {
       console.log('PropertyListingPage: Fetching properties with filters:', {
         purpose,
@@ -129,17 +128,6 @@ const PropertyListingPage: React.FC = () => {
         features: featuresFromUrl,
         sortBy,
         page: currentPage
-      });
-      
-      console.log('Fetching properties with filters:', {
-        status: 'active',
-        location: location.type === 'provinsi' ? { province: location.id } :
-                 location.type === 'kota' ? { city: location.id } :
-                 { district: location.id },
-        type: propertyType,
-        minBedrooms: bedrooms ? parseInt(bedrooms) : undefined,
-        priceRange: [priceRange[0] ? parseFloat(priceRange[0]) : undefined, priceRange[1] ? parseFloat(priceRange[1]) : undefined],
-        sortBy
       });
       
       // Prepare filters
@@ -186,7 +174,6 @@ const PropertyListingPage: React.FC = () => {
       
       console.log('PropertyListingPage: Calling listingService.getAllListings...');
       // Fetch properties
-      console.log('Calling listingService.getAllListings...');
       const { data, count } = await listingService.getAllListings(
         filters,
         currentPage,
