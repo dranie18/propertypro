@@ -56,6 +56,24 @@ import UnauthorizedPage from './pages/admin/UnauthorizedPage';
 import { supabase } from './lib/supabase';
 
 function App() {
+  useEffect(() => {
+    const testSupabaseConnection = async () => {
+      try {
+        // Attempt to fetch a small amount of data from a public table
+        // Replace 'listings' with any table you know exists and is accessible
+        const { data, error } = await supabase.from('listings').select('id').limit(1);
+        if (error) {
+          console.error('Supabase connection test failed:', error);
+        } else {
+          console.log('Supabase connection test successful:', data);
+        }
+      } catch (err) {
+        console.error('Supabase connection test caught an exception:', err);
+      }
+    };
+    testSupabaseConnection();
+  }, []);
+  
   return (
     <HelmetProvider>
       <AuthProvider>
