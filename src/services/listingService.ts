@@ -2,6 +2,8 @@ import { supabase } from '../lib/supabase';
 import { Property, PropertyType, ListingStatus } from '../types';
 import { User } from '../contexts/AuthContext';
 import { ListingFormData, UserListing } from '../types/listing';
+import { premiumService } from './premiumService';
+import { PremiumListing } from '../types/premium';
 
 class ListingService {
   async getAllListings(filters?: ListingFilters, page: number = 1, pageSize: number = 10): Promise<{
@@ -851,7 +853,10 @@ class ListingService {
         );
         if (activePremium) {
           try {
-            premiumDetails = premiumService.transformDbRecordToPremiumListing(activePremium, premiumPlans);
+            const plan = premiumPlans.find(p => p.id === activePremium.plan_id);
+            if (plan) {
+              premiumDetails = premiumService.transformDbRecordToPremiumListing(activePremium, plan);
+            }
           } catch (error) {
             console.error('Error transforming premium listing data:', error);
             // Fallback: create a basic structure to prevent crashes

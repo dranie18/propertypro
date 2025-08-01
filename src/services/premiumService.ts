@@ -568,7 +568,7 @@ class PremiumService {
   /**
    * Transform a database record to a PremiumListing interface
    */
-  private transformDbRecordToPremiumListing(record: any, plan: PremiumPlan): PremiumListing {
+  transformDbRecordToPremiumListing(record: any, plan: PremiumPlan): PremiumListing {
     // Create premium features
     const features = [
       { id: 'featured', name: 'Featured Placement', description: 'Top of search results', icon: 'Star', enabled: true },

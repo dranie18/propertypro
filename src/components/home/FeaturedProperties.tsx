@@ -19,7 +19,7 @@ const FeaturedProperties: React.FC = () => {
     setIsLoading(true);
     try {
       // Get featured/promoted properties
-      const { data } = await listingService.getAllListings(
+      const { data: propertiesData } = await listingService.getAllListings(
         { 
           sortBy: 'premium',
           status: 'active'
@@ -28,7 +28,7 @@ const FeaturedProperties: React.FC = () => {
         6  // pageSize
       );
       
-      setFeaturedProperties(data);
+      setFeaturedProperties(propertiesData);
     } catch (error) {
       console.error('Error fetching featured properties:', error);
       showError('Error', 'Failed to load featured properties. Please try again.'); // ADDED: Error handling
