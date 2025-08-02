@@ -185,16 +185,9 @@ const PropertyListingPage: React.FC = () => {
       setProperties(data);
       setTotalCount(count);
     } catch (error: any) { // MODIFIED: Catch error as 'any' for message access
-      // Handle network errors gracefully
-      if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
-        console.warn('PropertyListingPage: Network error fetching properties - Supabase may be unreachable:', error.message);
-        setError('Network connection issue. Please check your internet connection and try again.');
-        showError('Network Error', 'Unable to connect to the server. Please check your internet connection and try again.');
-      } else {
-        console.error('PropertyListingPage: Unexpected error fetching properties:', error);
-        setError(error.message || 'Failed to load properties. Please try again.');
-        showError('Error', error.message || 'Failed to load properties. Please try again.');
-      }
+      console.error('PropertyListingPage: Error fetching properties:', error);
+      setError(error.message || 'Failed to load properties. Please try again.');
+      showError('Error', error.message || 'Failed to load properties. Please try again.');
       // Set empty data on error
       setProperties([]);
       setTotalCount(0);

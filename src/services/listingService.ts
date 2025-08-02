@@ -189,8 +189,13 @@ class ListingService {
       };
     } catch (error) {
       // Handle network errors gracefully
-      if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
-        console.warn('Network error fetching listings - Supabase may be unreachable:', error.message);
+      if (error instanceof TypeError || 
+          (error && typeof error === 'object' && error.message && 
+           (error.message.includes('Failed to fetch') || 
+            error.message.includes('NetworkError') || 
+            error.message.includes('fetch') ||
+            error.message.includes('network')))) {
+        console.warn('Network error fetching listings - Supabase may be unreachable:', error);
         return { data: [], count: 0 };
       }
       
