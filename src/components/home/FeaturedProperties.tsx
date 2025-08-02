@@ -28,7 +28,13 @@ const FeaturedProperties: React.FC = () => {
         6  // pageSize
       );
       
-      setFeaturedProperties(propertiesData);
+      // Ensure we always set an array to prevent .map() errors
+      if (Array.isArray(propertiesData)) {
+        setFeaturedProperties(propertiesData);
+      } else {
+        console.error('Expected array from getAllListings but received:', propertiesData);
+        setFeaturedProperties([]);
+      }
     } catch (error) {
       console.error('Error fetching featured properties:', error);
       showError('Error', 'Failed to load featured properties. Please try again.'); // ADDED: Error handling
