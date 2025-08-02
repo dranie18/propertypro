@@ -941,7 +941,15 @@ class ListingService {
       };
     });
     
-    return Promise.all(propertyPromises);
+    const result = await Promise.all(propertyPromises);
+    
+    // Defensive check to ensure we always return an array
+    if (!Array.isArray(result)) {
+      console.error('Promise.all did not return an array in mapDbListingsToProperties, got:', typeof result, result);
+      return [];
+    }
+    
+    return result;
   }
 
   /**
