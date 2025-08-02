@@ -174,7 +174,7 @@ class ListingService {
       console.log('Main listings query successful, enriching with related data...');
       const enrichedListings = await this._enrichListingsWithRelatedData(data || []);
       
-      let properties: Property[] = this.mapDbListingsToProperties(enrichedListings);
+      let properties: Property[] = await this.mapDbListingsToProperties(enrichedListings);
       
       // Ensure properties is always an array
       if (!Array.isArray(properties)) {
