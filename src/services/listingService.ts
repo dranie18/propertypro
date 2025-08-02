@@ -664,7 +664,7 @@ class ListingService {
    */
   async incrementViewCount(id: string): Promise<void> {
     try {
-      await supabase.rpc('increment_listing_views', { listing_id: id });
+      await supabase.rpc('increment_listing_views', { p_listing_id: id });
     } catch (error) {
       console.error('Error incrementing view count:', error);
     }
@@ -675,7 +675,7 @@ class ListingService {
    */
   async incrementInquiryCount(id: string): Promise<void> {
     try {
-      await supabase.rpc('increment_listing_inquiries', { listing_id: id });
+      await supabase.rpc('increment_listing_inquiries', { p_listing_id: id });
     } catch (error) {
       console.error('Error incrementing inquiry count:', error);
     }
