@@ -176,6 +176,12 @@ class ListingService {
       
       let properties: Property[] = this.mapDbListingsToProperties(enrichedListings);
       
+      // Ensure properties is always an array
+      if (!Array.isArray(properties)) {
+        console.error('mapDbListingsToProperties did not return an array, forcing to empty array:', properties);
+        properties = [];
+      }
+      
       console.log('getAllListings completed successfully, returning', properties.length, 'properties');
       return {
         data: properties,
