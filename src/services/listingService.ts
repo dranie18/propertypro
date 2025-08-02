@@ -841,6 +841,12 @@ class ListingService {
   }
 
   private async mapDbListingsToProperties(dbListings: any[]): Promise<Property[]> {
+    // Defensive check to ensure dbListings is an array
+    if (!Array.isArray(dbListings)) {
+      console.error('mapDbListingsToProperties received non-array input:', typeof dbListings, dbListings);
+      return [];
+    }
+    
     // Fetch premium plans once for all listings to avoid repeated calls
     let premiumPlans: any[] = [];
     try {
