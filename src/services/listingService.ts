@@ -188,13 +188,59 @@ class ListingService {
         count: count || 0
       };
     } catch (error) {
-      // Handle network errors gracefully
-      if (error instanceof TypeError || 
-          (error && typeof error === 'object' && error.message && 
-           (error.message.includes('Failed to fetch') || 
-            error.message.includes('NetworkError') || 
-            error.message.includes('fetch') ||
-            error.message.includes('network')))) {
+      // Enhanced network error detection
+      const isNetworkError = (err: any): boolean => {
+        if (!err) return false;
+        
+        // Check if it's a TypeError
+        if (err instanceof TypeError) return true;
+        
+        // Check error message (case-insensitive)
+        const message = (err.message || '').toLowerCase();
+        if (message.includes('failed to fetch') || 
+            message.includes('networkerror') || 
+            message.includes('fetch') ||
+            message.includes('network') ||
+            message.includes('connection') ||
+            message.includes('timeout')) {
+          return true;
+        }
+        
+        // Check error name (case-insensitive)
+        const name = (err.name || '').toLowerCase();
+        if (name.includes('networkerror') || 
+            name.includes('typeerror') ||
+            name.includes('fetcherror')) {
+          return true;
+        }
+        
+        // Check error details (case-insensitive)
+        const details = (err.details || '').toLowerCase();
+        if (details.includes('failed to fetch') || 
+            details.includes('network') ||
+            details.includes('connection')) {
+          return true;
+        }
+        
+        // Check error code
+        if (err.code === 'NETWORK_ERROR' || err.code === 'FETCH_ERROR') {
+          return true;
+        }
+        
+        // Check if error cause contains network-related messages
+        if (err.cause && typeof err.cause === 'object') {
+          const causeMessage = (err.cause.message || '').toLowerCase();
+          if (causeMessage.includes('failed to fetch') || 
+              causeMessage.includes('network') ||
+              causeMessage.includes('connection')) {
+            return true;
+          }
+        }
+        
+        return false;
+      };
+      
+      if (isNetworkError(error)) {
         console.warn('Network error fetching listings - Supabase may be unreachable:', error);
         return { data: [], count: 0 };
       }
@@ -229,7 +275,65 @@ class ListingService {
       return this.mapDbListingToProperty(listing);
     } catch (error) {
       console.error('Error fetching listing:', error);
-      throw error;
+      
+      // Enhanced network error detection
+      const isNetworkError = (err: any): boolean => {
+        if (!err) return false;
+        
+        // Check if it's a TypeError
+        if (err instanceof TypeError) return true;
+        
+        // Check error message (case-insensitive)
+        const message = (err.message || '').toLowerCase();
+        if (message.includes('failed to fetch') || 
+            message.includes('networkerror') || 
+            message.includes('fetch') ||
+            message.includes('network') ||
+            message.includes('connection') ||
+            message.includes('timeout')) {
+          return true;
+        }
+        
+        // Check error name (case-insensitive)
+        const name = (err.name || '').toLowerCase();
+        if (name.includes('networkerror') || 
+            name.includes('typeerror') ||
+            name.includes('fetcherror')) {
+          return true;
+        }
+        
+        // Check error details (case-insensitive)
+        const details = (err.details || '').toLowerCase();
+        if (details.includes('failed to fetch') || 
+            details.includes('network') ||
+            details.includes('connection')) {
+          return true;
+        }
+        
+        // Check error code
+        if (err.code === 'NETWORK_ERROR' || err.code === 'FETCH_ERROR') {
+          return true;
+        }
+        
+        // Check if error cause contains network-related messages
+        if (err.cause && typeof err.cause === 'object') {
+          const causeMessage = (err.cause.message || '').toLowerCase();
+          if (causeMessage.includes('failed to fetch') || 
+              causeMessage.includes('network') ||
+              causeMessage.includes('connection')) {
+            return true;
+          }
+        }
+        
+        return false;
+      };
+      
+      if (isNetworkError(error)) {
+        console.warn('Network error fetching listing by ID - returning null:', error);
+        return null; // Return null for network errors
+      }
+      
+      throw error; // Re-throw non-network errors
     }
   }
 
@@ -312,7 +416,65 @@ class ListingService {
       return userListings;
     } catch (error) {
       console.error('Error fetching user listings:', error);
-      throw error; // RE-THROW ERROR: Allow calling component to handle it
+      
+      // Enhanced network error detection
+      const isNetworkError = (err: any): boolean => {
+        if (!err) return false;
+        
+        // Check if it's a TypeError
+        if (err instanceof TypeError) return true;
+        
+        // Check error message (case-insensitive)
+        const message = (err.message || '').toLowerCase();
+        if (message.includes('failed to fetch') || 
+            message.includes('networkerror') || 
+            message.includes('fetch') ||
+            message.includes('network') ||
+            message.includes('connection') ||
+            message.includes('timeout')) {
+          return true;
+        }
+        
+        // Check error name (case-insensitive)
+        const name = (err.name || '').toLowerCase();
+        if (name.includes('networkerror') || 
+            name.includes('typeerror') ||
+            name.includes('fetcherror')) {
+          return true;
+        }
+        
+        // Check error details (case-insensitive)
+        const details = (err.details || '').toLowerCase();
+        if (details.includes('failed to fetch') || 
+            details.includes('network') ||
+            details.includes('connection')) {
+          return true;
+        }
+        
+        // Check error code
+        if (err.code === 'NETWORK_ERROR' || err.code === 'FETCH_ERROR') {
+          return true;
+        }
+        
+        // Check if error cause contains network-related messages
+        if (err.cause && typeof err.cause === 'object') {
+          const causeMessage = (err.cause.message || '').toLowerCase();
+          if (causeMessage.includes('failed to fetch') || 
+              causeMessage.includes('network') ||
+              causeMessage.includes('connection')) {
+            return true;
+          }
+        }
+        
+        return false;
+      };
+      
+      if (isNetworkError(error)) {
+        console.warn('Network error fetching user listings - returning empty array:', error);
+        return []; // Return empty array for network errors
+      }
+      
+      throw error; // Re-throw non-network errors for calling component to handle
     }
   }
   
@@ -614,8 +776,59 @@ class ListingService {
         };
       });
     } catch (error) {
-      // Handle network errors gracefully
-      if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
+      // Enhanced network error detection
+      const isNetworkError = (err: any): boolean => {
+        if (!err) return false;
+        
+        // Check if it's a TypeError
+        if (err instanceof TypeError) return true;
+        
+        // Check error message (case-insensitive)
+        const message = (err.message || '').toLowerCase();
+        if (message.includes('failed to fetch') || 
+            message.includes('networkerror') || 
+            message.includes('fetch') ||
+            message.includes('network') ||
+            message.includes('connection') ||
+            message.includes('timeout')) {
+          return true;
+        }
+        
+        // Check error name (case-insensitive)
+        const name = (err.name || '').toLowerCase();
+        if (name.includes('networkerror') || 
+            name.includes('typeerror') ||
+            name.includes('fetcherror')) {
+          return true;
+        }
+        
+        // Check error details (case-insensitive)
+        const details = (err.details || '').toLowerCase();
+        if (details.includes('failed to fetch') || 
+            details.includes('network') ||
+            details.includes('connection')) {
+          return true;
+        }
+        
+        // Check error code
+        if (err.code === 'NETWORK_ERROR' || err.code === 'FETCH_ERROR') {
+          return true;
+        }
+        
+        // Check if error cause contains network-related messages
+        if (err.cause && typeof err.cause === 'object') {
+          const causeMessage = (err.cause.message || '').toLowerCase();
+          if (causeMessage.includes('failed to fetch') || 
+              causeMessage.includes('network') ||
+              causeMessage.includes('connection')) {
+            return true;
+          }
+        }
+        
+        return false;
+      };
+      
+      if (isNetworkError(error)) {
         console.warn('Network error enriching listings with related data - returning basic data:', error.message);
         // Return listings without enriched data
         return listings.map(listing => ({
