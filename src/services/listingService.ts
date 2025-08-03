@@ -664,9 +664,22 @@ class ListingService {
    */
   async incrementViewCount(id: string): Promise<void> {
     try {
+      // Check if id is a valid UUID format before making the RPC call
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+      if (!uuidRegex.test(id)) {
+        console.warn('Invalid UUID format for listing ID:', id);
+        return;
+      }
+      
       await supabase.rpc('increment_listing_views', { p_listing_id: id });
     } catch (error) {
-      console.error('Error incrementing view count:', error);
+      // Handle the specific bigint type error gracefully
+      if (error && typeof error === 'object' && 'code' in error && error.code === '22P02') {
+        console.warn('Database function increment_listing_views expects bigint but received UUID. This needs to be fixed in the database function definition.');
+      } else {
+        console.error('Error incrementing view count:', error);
+      }
+      // Don't throw the error to prevent breaking the user experience
     }
   }
 
@@ -675,9 +688,22 @@ class ListingService {
    */
   async incrementInquiryCount(id: string): Promise<void> {
     try {
+      // Check if id is a valid UUID format before making the RPC call
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+      if (!uuidRegex.test(id)) {
+        console.warn('Invalid UUID format for listing ID:', id);
+        return;
+      }
+      
       await supabase.rpc('increment_listing_inquiries', { p_listing_id: id });
     } catch (error) {
-      console.error('Error incrementing inquiry count:', error);
+      // Handle the specific bigint type error gracefully
+      if (error && typeof error === 'object' && 'code' in error && error.code === '22P02') {
+        console.warn('Database function increment_listing_inquiries expects bigint but received UUID. This needs to be fixed in the database function definition.');
+      } else {
+        console.error('Error incrementing inquiry count:', error);
+      }
+      // Don't throw the error to prevent breaking the user experience
     }
   }
 
