@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useLocation, useParams, useSearchParams } from 'react-router-dom';
 import Layout from '../components/layout/Layout';
 import PropertyCard from '../components/common/PropertyCard';
@@ -53,7 +53,9 @@ const PropertyListingPage: React.FC = () => {
   const maxFloors = searchParams.get('maxFloors') ? Number(searchParams.get('maxFloors')) : undefined;
   
   // Get features from URL parameters (can be multiple)
-  const featuresFromUrl = searchParams.getAll('features');
+  const featuresFromUrl = useMemo(() => {
+    return searchParams.getAll('features');
+  }, [searchParams]);
   
   const [properties, setProperties] = useState<Property[]>([]);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
@@ -83,7 +85,7 @@ const PropertyListingPage: React.FC = () => {
     maxLandSize: maxLandSize?.toString() || '',
     minFloors: minFloors?.toString() || '',
     maxFloors: maxFloors?.toString() || '',
-    features: [...featuresFromUrl]
+    features: featuresFromUrl
   });
   
   useEffect(() => {
@@ -207,9 +209,10 @@ const PropertyListingPage: React.FC = () => {
   
   const toggleFeature = (featureId: string) => {
     setLocalFilters(prev => {
-      const newFeatures = prev.features.includes(featureId)
-        ? prev.features.filter(id => id !== featureId)
-        : [...prev.features, featureId];
+      const currentFeatures = Array.isArray(prev.features) ? prev.features : [];
+      const newFeatures = currentFeatures.includes(featureId)
+        ? currentFeatures.filter(id => id !== featureId)
+        : [...currentFeatures, featureId];
       
       return {
         ...prev,
@@ -301,9 +304,11 @@ const PropertyListingPage: React.FC = () => {
     
     // Update features filters
     newParams.delete('features');
-    localFilters.features.forEach(feature => {
-      newParams.append('features', feature);
-    });
+    if (Array.isArray(localFilters.features)) {
+      localFilters.features.forEach(feature => {
+        newParams.append('features', feature);
+      });
+    }
     
     // Reset to page 1 when filters change
     newParams.delete('page');
@@ -335,7 +340,7 @@ const PropertyListingPage: React.FC = () => {
       maxLandSize: '',
       minFloors: '',
       maxFloors: '',
-      features: []
+      features: featuresFromUrl
     });
   };
   
@@ -674,7 +679,7 @@ const PropertyListingPage: React.FC = () => {
                                 <input
                                   type="checkbox"
                                   id={`filter-feature-${feature.id}`}
-                                  checked={localFilters.features.includes(feature.id)}
+                                  checked={Array.isArray(localFilters.features) && localFilters.features.includes(feature.id)}
                                   onChange={() => toggleFeature(feature.id)}
                                   className="h-4 w-4 text-primary border-neutral-300 rounded focus:ring-primary"
                                 />
