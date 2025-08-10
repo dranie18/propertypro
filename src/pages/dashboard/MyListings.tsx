@@ -122,30 +122,6 @@ const MyListings: React.FC = () => {
     window.location.href = `/premium/upgrade?propertyId=${listingId}`;
   };
 
-  const editProperty = (id: string) => {
-    navigate(`/dashboard/listings/edit/${id}`);
-  };
-  
-  const confirmDeleteProperty = (listingId: string) => {
-    setPropertyToDelete(listingId);
-    setShowDeleteModal(true);
-  };
-  
-  const deleteProperty = async () => {
-    if (!propertyToDelete) return;
-    
-    try {
-      await handleDeleteListing(propertyToDelete);
-    } finally {
-      setShowDeleteModal(false);
-      setPropertyToDelete(null);
-    }
-  };
-  
-  const handleUpgradeToPremium = (listingId: string) => {
-    window.location.href = `/premium/upgrade?propertyId=${listingId}`;
-  };
-  
   const getStatusBadge = (status: string) => {
     const statusConfig = {
       active: { label: 'Aktif', className: 'bg-green-100 text-green-800', icon: CheckCircle },
@@ -165,6 +141,10 @@ const MyListings: React.FC = () => {
     );
   };
 
+  const editProperty = (id: string) => {
+    navigate(`/dashboard/listings/edit/${id}`);
+  };
+  
   const confirmDeleteProperty = (listingId: string) => {
     setPropertyToDelete(listingId);
     setShowDeleteModal(true);
