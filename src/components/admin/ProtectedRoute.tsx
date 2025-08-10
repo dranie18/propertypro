@@ -4,16 +4,10 @@ import { useAuth } from '../../contexts/AuthContext';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
-  requireAdmin?: boolean;
-  requireSuperAdmin?: boolean;
 }
 
-const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ 
-  children, 
-  requireAdmin = false, 
-  requireSuperAdmin = false 
-}) => {
-  const { isAuthenticated, loading, isAdmin, isSuperAdmin, user } = useAuth();
+const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
+  const { isAuthenticated, loading, user } = useAuth();
   const location = useLocation();
 
   if (loading) {
@@ -25,25 +19,12 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   }
 
   if (!isAuthenticated) {
-    // For admin routes, redirect to admin login
-    if (requireAdmin || requireSuperAdmin) {
-      return <Navigate to="/admin/login" state={{ from: location }} replace />;
-    }
-    // For user dashboard routes, redirect to regular login
     return <Navigate to="/login" state={{ from: location }} replace />;
-  }
-
-  if (requireSuperAdmin && !isSuperAdmin()) {
-    return <Navigate to="/admin/unauthorized" replace />;
-  }
-
-  if (requireAdmin && !isAdmin()) {
-    return <Navigate to="/admin/unauthorized" replace />;
   }
 
   // Check if user account is suspended
   if (user?.status === 'suspended') {
-    return <Navigate to="/admin/unauthorized" replace />;
+    return <Navigate to="/login" replace />;
   }
 
   return <>{children}</>;

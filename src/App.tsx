@@ -16,43 +16,25 @@ import ResetPasswordPage from './pages/ResetPasswordPage';
 import EmailConfirmationSuccessPage from './pages/EmailConfirmationSuccessPage';
 import EmailConfirmationFailurePage from './pages/EmailConfirmationFailurePage';
 
-// Premium Pages
 import PremiumUpgradePage from './pages/PremiumUpgradePage';
 import PremiumDashboardPage from './pages/PremiumDashboardPage';
 import PremiumFeaturesPage from './pages/PremiumFeaturesPage';
 
-// Payment Pages
 import PaymentSuccessPage from './pages/payment/PaymentSuccessPage';
 import PaymentFailurePage from './pages/payment/PaymentFailurePage';
 
-// User Dashboard Pages
 import DashboardLayout from './components/dashboard/DashboardLayout';
 import DashboardOverview from './pages/dashboard/DashboardOverview';
 import MyListings from './pages/dashboard/MyListings';
 import AddEditListing from './pages/dashboard/AddEditListing';
 import ProfileSettings from './pages/dashboard/ProfileSettings';
 
-// User Area Pages
 import UserLayout from './components/user/UserLayout';
 import UserDashboard from './pages/user/UserDashboard';
 import UserProfile from './pages/user/UserProfile';
 import UserProperties from './pages/user/UserProperties';
 
-// Admin Components
 import ProtectedRoute from './components/admin/ProtectedRoute';
-import AdminLayout from './components/admin/AdminLayout';
-import AdminLoginPage from './pages/admin/AdminLoginPage';
-import AdminDashboard from './pages/admin/AdminDashboard';
-import UserManagement from './pages/admin/UserManagement';
-import PropertyManagement from './pages/admin/PropertyManagement';
-import PremiumManagement from './pages/admin/PremiumManagement';
-import CategoryManagement from './pages/admin/CategoryManagement';
-import LocationManagement from './pages/admin/LocationManagement';
-import ReportsManagement from './pages/admin/ReportsManagement';
-import ModerationHistory from './pages/admin/ModerationHistory';
-import Analytics from './pages/admin/Analytics';
-import Settings from './pages/admin/Settings';
-import UnauthorizedPage from './pages/admin/UnauthorizedPage';
 import { supabase } from './lib/supabase';
 
 function App() {
@@ -127,27 +109,6 @@ function App() {
                 <Route path="dashboard" element={<UserDashboard />} />
                 <Route path="profile" element={<UserProfile />} />
                 <Route path="properties" element={<UserProperties />} />
-              </Route>
-
-              {/* Admin Routes */}
-              <Route path="/admin/login" element={<AdminLoginPage />} />
-              <Route path="/admin/unauthorized" element={<UnauthorizedPage />} />
-              
-              <Route path="/admin" element={
-                <ProtectedRoute requireAdmin>
-                  <AdminLayout />
-                </ProtectedRoute>
-              }>
-                <Route path="dashboard" element={<AdminDashboard />} />
-                <Route path="users" element={<UserManagement />} />
-                <Route path="properties" element={<PropertyManagement />} />
-                <Route path="premium" element={<PremiumManagement />} />
-                <Route path="categories" element={<CategoryManagement />} />
-                <Route path="locations" element={<LocationManagement />} />
-                <Route path="reports" element={<ReportsManagement />} />
-                <Route path="moderation-history" element={<ModerationHistory />} />
-                <Route path="analytics" element={<Analytics />} />
-                <Route path="settings" element={<Settings />} />
               </Route>
             </Routes>
           </Router>
