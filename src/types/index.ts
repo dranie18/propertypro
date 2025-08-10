@@ -134,7 +134,7 @@ export interface User {
   /** URL to user's avatar image (optional) */
   avatar?: string;
   /** User role */
-  role: 'user' | 'agent' | 'admin' | 'superadmin';
+  role: 'user' | 'agent';
   /** Array of saved property IDs */
   savedProperties?: string[];
   /** User status */
