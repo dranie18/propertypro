@@ -10,11 +10,13 @@ import { premiumService } from '../../services/premiumService';
 interface PremiumPropertyCardProps {
   property: Property;
   premiumListing?: PremiumListing;
+  onAnalyticsUpdate?: (type: 'view' | 'inquiry' | 'favorite') => void;
 }
 
 const PremiumPropertyCard: React.FC<PremiumPropertyCardProps> = ({ 
   property, 
-  premiumListing
+  premiumListing,
+  onAnalyticsUpdate
 }) => {
   // Defensive check to prevent crashes from null/undefined props
   if (!property) {
