@@ -4,7 +4,6 @@ import Layout from '../components/layout/Layout';
 import PropertyCard from '../components/common/PropertyCard';
 import SearchBox from '../components/common/SearchBox';
 import { Property } from '../types';
-import { premiumService } from '../services/premiumService';
 import { 
   GridIcon, 
   List, 

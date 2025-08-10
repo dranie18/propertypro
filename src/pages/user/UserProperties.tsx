@@ -151,6 +151,14 @@ const UserProperties: React.FC = () => {
     }
   };
   
+  const editProperty = (id: string) => {
+    navigate(`/dashboard/listings/edit/${id}`);
+  };
+  
+  const handleUpgradeToPremium = (listingId: string) => {
+    window.location.href = `/premium/upgrade?propertyId=${listingId}`;
+  };
+  
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'active':
