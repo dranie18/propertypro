@@ -117,11 +117,6 @@ const UserProperties: React.FC = () => {
     setFilteredProperties(filtered);
   };
   
-  const editProperty = (id: string) => {
-    // Navigate to the edit property page
-    navigate(`/dashboard/listings/edit/${id}`);
-  };
-  
   const confirmDeleteProperty = (id: string) => {
     setPropertyToDelete(id);
     setShowDeleteModal(true);
@@ -149,10 +144,6 @@ const UserProperties: React.FC = () => {
       setShowDeleteModal(false);
       setPropertyToDelete(null);
     }
-  };
-  
-  const editProperty = (id: string) => {
-    navigate(`/dashboard/listings/edit/${id}`);
   };
   
   const handleUpgradeToPremium = (listingId: string) => {
