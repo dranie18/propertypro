@@ -33,8 +33,6 @@ import UserLayout from './components/user/UserLayout';
 import UserDashboard from './pages/user/UserDashboard';
 import UserProfile from './pages/user/UserProfile';
 import UserProperties from './pages/user/UserProperties';
-
-import ProtectedRoute from './components/admin/ProtectedRoute';
 import { supabase } from './lib/supabase';
 
 function App() {
@@ -88,9 +86,7 @@ function App() {
 
               {/* User Dashboard Routes */}
               <Route path="/dashboard" element={
-                <ProtectedRoute>
-                  <DashboardLayout />
-                </ProtectedRoute>
+                <DashboardLayout />
               }>
                 <Route index element={<DashboardOverview />} />
                 <Route path="listings" element={<MyListings />} />
@@ -102,9 +98,7 @@ function App() {
 
               {/* User Area Routes */}
               <Route path="/user" element={
-                <ProtectedRoute>
-                  <UserLayout />
-                </ProtectedRoute>
+                <UserLayout />
               }>
                 <Route path="dashboard" element={<UserDashboard />} />
                 <Route path="profile" element={<UserProfile />} />
